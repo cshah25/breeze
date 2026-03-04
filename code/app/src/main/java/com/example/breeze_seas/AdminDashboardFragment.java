@@ -1,4 +1,6 @@
 package com.example.breeze_seas;
 
-public class AdminDashboardFragment {
+import androidx.fragment.app.Fragment;
+
+public class AdminDashboardFragment extends Fragment {
 }
