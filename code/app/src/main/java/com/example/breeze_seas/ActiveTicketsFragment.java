@@ -35,13 +35,17 @@ public class ActiveTicketsFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.active_tickets_recycler);
 
         ActiveTicketsAdapter adapter = new ActiveTicketsAdapter(ticket -> {
-            // Temporary click feedback; we implement real dialogs next.
+
+            if (ticket.getStatus() == TicketUIModel.Status.BACKUP) {
+                new BackupPoolBottomSheet().show(getParentFragmentManager(), "BackupPoolBottomSheet");
+                return;
+            }
+
             Snackbar.make(view, "Clicked: " + ticket.getTitle(), Snackbar.LENGTH_SHORT).show();
         });
 
         recyclerView.setAdapter(adapter);
 
-        // Demo data: Pending + Backup + Action Required
         List<TicketUIModel> demo = Arrays.asList(
                 new TicketUIModel("e1", "Beginner Swimming Lessons", "Closes in 2 days", TicketUIModel.Status.PENDING),
                 new TicketUIModel("e2", "Piano Lessons", "Lottery drawn • Backup pool", TicketUIModel.Status.BACKUP),
