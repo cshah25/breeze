@@ -43,19 +43,11 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
         // Default tab
-        //if (savedInstanceState == null) {
-            //setCurrentFragment(exploreFragment);
-            //bottomNav.setSelectedItemId(R.id.nav_explore);
-        //}
-        // Default tab - MODIFIED FOR TESTING
         if (savedInstanceState == null) {
-            // 1. Start your fragment directly
-            setCurrentFragment(new WaitingListFragment());
-
-            // 2. Optional: Clear the selection on the bottom nav so it's not confusing
-            // Or set it to nav_organize if that's where this fragment "belongs"
-            bottomNav.getMenu().setGroupCheckable(0, true, false);
+            setCurrentFragment(exploreFragment);
+            bottomNav.setSelectedItemId(R.id.nav_explore);
         }
+        
 
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
