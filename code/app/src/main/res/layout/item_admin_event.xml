@@ -9,26 +9,34 @@
     android:paddingHorizontal="16dp"
     android:paddingVertical="12dp">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/iv_avatar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:scaleType="centerCrop"
-        android:src="@mipmap/ic_launcher" app:shapeAppearanceOverlay="@style/CircleImage" />
-
-    <TextView
-        android:id="@+id/tv_user_name"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_weight="1"
-        android:text="John Doe" android:textAppearance="?attr/textAppearanceListItem"
-        android:textColor="?attr/colorOnSurface" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_event_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Annual Summer Picnic"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tv_event_organizer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Organizer: John Doe"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
 
     <ImageView
-        android:id="@+id/btn_delete"
+        android:id="@+id/btn_delete_event"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:focusable="true"

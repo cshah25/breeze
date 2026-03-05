@@ -3,6 +3,7 @@ package com.example.breeze_seas;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 
 import androidx.annotation.ContentView;
@@ -38,7 +39,7 @@ public class AdminDashboardFragmentTest {
 
     @Test
     public void testBackArrow_isVisible() {
-        // Check if it exists
-        onView(withId(R.id.ad_btn_back_arrow)).check(matches(isDisplayed()));
+        // Trying new test method after switching to material design
+        onView(withContentDescription("Go back")).check(matches(isDisplayed()));
     }
 }
