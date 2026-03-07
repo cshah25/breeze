@@ -26,6 +26,10 @@ public class WaitingList {
         this.entrantList=new ArrayList<User>();
     }
 
+    public ArrayList<User> getEntrantList() {
+        return entrantList;
+    }
+
     //should have been implemented from the user side
     //for testing purposes
     public void addEntrant(User entrant){
@@ -41,7 +45,7 @@ public class WaitingList {
 
     }
 
-    public void getWaitingList(android.widget.BaseAdapter adapter){
+    public void getWaitingList(android.widget.BaseAdapter adapter,Runnable onFinish){
         CollectionReference list=db.collection("Events").document(event)
                 .collection("WaitingList");
         list.orderBy("timestamp", Query.Direction.ASCENDING).get()
@@ -54,7 +58,11 @@ public class WaitingList {
                         }
                         if (adapter != null) adapter.notifyDataSetChanged();
                     }
+                    if (onFinish != null) {
+                        onFinish.run();
+                    }
                 });
+
     }
 
     public void removeEntrant(android.widget.BaseAdapter adapter, User entrant,String event){
