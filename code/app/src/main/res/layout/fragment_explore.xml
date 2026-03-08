@@ -10,40 +10,58 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-
-        <com.google.android.material.search.SearchBar
-            android:id="@+id/exploreSearchBar"
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/exploreTopMenuWrapper"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Search for Events"
-            app:layout_constraintBottom_toTopOf="@+id/recyclerViewEvents"
-            app:layout_constraintEnd_toStartOf="@+id/filterButton"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/exploreRecyclerViewEvents">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/filterButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="20dp"
-            android:text="Filter"
-            app:layout_constraintBottom_toTopOf="@+id/recyclerViewEvents"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/exploreSearchBar"
-            app:layout_constraintTop_toTopOf="parent" />
+            <com.google.android.material.search.SearchBar
+                android:id="@+id/exploreSearchBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="Search for Events"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/exploreFilterButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/exploreFilterButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="20dp"
+                android:text="Filter"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/exploreSearchBar"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewEvents"
+            android:id="@+id/exploreRecyclerViewEvents"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/exploreSearchBar"
+            app:layout_constraintTop_toBottomOf="@+id/exploreTopMenuWrapper"
             app:layout_constraintVertical_bias="1.0" />
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/exploreQRCodeFloatingButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="15dp"
+            android:layout_marginBottom="15dp"
+            app:icon="@drawable/ic_qr_code"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
