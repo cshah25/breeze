@@ -23,6 +23,8 @@ public class User {
         this.phoneNumber = null;
         this.isAdmin = false;
         this.notificationEnabled = true;
+        this.createdAt = null;
+        this.updatedAt = null;
     }
 
     public User(String deviceId, String userName, String email) {
@@ -54,6 +56,8 @@ public class User {
         this.deviceId = deviceId;
         this.phoneNumber = phoneNumber;
         this.isAdmin = isAdmin;
+        this.createdAt = null;
+        this.updatedAt = null;
     }
 
     public String getUserName() {
