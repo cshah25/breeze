@@ -1,7 +1,9 @@
 package com.example.breeze_seas;
 
 /**
- * Demo UI model for archived past event history.
+ * UI-facing model for archived past event history.
+ *
+ * <p>This is intentionally presentation-focused and does not define a Firestore schema.
  */
 public class PastEventUIModel {
 
