@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * This class provides methods to create, update, delete, and retrieve users
- * using the device's unique ID as the primarykey.
+ * using the device's unique ID as the primary key.
  */
 public class UserDB {
 
