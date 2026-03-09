@@ -1,6 +1,8 @@
 package com.example.breeze_seas;
 
+
 import android.os.Bundle;
+
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 /*** MainActivity is the container for the app's main navigation.
@@ -23,11 +26,13 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  */
 public class MainActivity extends AppCompatActivity {
 
+
     private final ExploreFragment exploreFragment = new ExploreFragment();
     private final TicketsFragment ticketsFragment = new TicketsFragment();
     private final OrganizeFragment organizeFragment = new OrganizeFragment();
     private final NotificationFragment notificationFragment = new NotificationFragment();
     private final ProfileFragment profileFragment = new ProfileFragment();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,19 +40,24 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+
 
         // Default tab
         if (savedInstanceState == null) {
             setCurrentFragment(exploreFragment);
             bottomNav.setSelectedItemId(R.id.nav_explore);
         }
+
+
 
 
         bottomNav.setOnItemSelectedListener(item -> {
@@ -74,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
+
     public void openSecondaryFragment(Fragment fragment) {
         getSupportFragmentManager()
                 .beginTransaction()
@@ -88,4 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 }
+
+
+
 
