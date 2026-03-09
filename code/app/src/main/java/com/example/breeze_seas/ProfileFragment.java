@@ -23,18 +23,10 @@ import org.w3c.dom.Text;
  ** <p>Outstanding/Future Work:* - Set up entrant profile viewing/editing and notification choices.
  */
 public class ProfileFragment extends Fragment {
-
-    private TextInputEditText editName;
-
     private TextInputLayout nameLayout, emailLayout, phoneLayout;
     private ImageButton editNameBtn, editEmailBtn, editPhoneBtn;
     private MaterialButton saveBtn, deleteBtn;
     private MaterialSwitch optOutSwitch;
-
-
-    public ProfileFragment() {
-        super(R.layout.fragment_profile);
-    }
 
     @Nullable
     @Override
@@ -62,8 +54,6 @@ public class ProfileFragment extends Fragment {
 
         return view;
     }
-
-
 
     private void setupListeners() {
         // Toggle name field when edit icon is clicked
