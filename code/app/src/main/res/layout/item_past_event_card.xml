@@ -31,7 +31,7 @@
                 android:id="@+id/past_event_icon_surface"
                 android:layout_width="46dp"
                 android:layout_height="46dp"
-                android:background="@drawable/ic_edit">
+                android:background="@drawable/bg_ticket_qr_placeholder">
 
                 <ImageView
                     android:id="@+id/past_event_icon"
