@@ -2,6 +2,7 @@ package com.example.breeze_seas;
 
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -26,6 +27,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  */
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
+    private static final boolean TEMP_TICKET_TEST_MODE = true;
+
     private final ExploreFragment exploreFragment = new ExploreFragment();
     private final TicketsFragment ticketsFragment = new TicketsFragment();
     private final OrganizeFragment organizeFragment = new OrganizeFragment();
@@ -49,6 +53,11 @@ public class MainActivity extends AppCompatActivity {
         // Get android ID
         this.androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
+        if (TEMP_TICKET_TEST_MODE) {
+            initializeUI(savedInstanceState, null);
+            return;
+        }
+
         // Initialize UserDB
         UserDB userDBInstance = new UserDB();
 
@@ -60,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onError(Exception e) {
+                Log.e(TAG, "Failed to load user for startup. Falling back to guest flow.", e);
+                initializeUI(savedInstanceState, null);
             }
         });
 
@@ -87,6 +98,13 @@ public class MainActivity extends AppCompatActivity {
 
         //  user not found / login == false
         if (user == null) {
+            if (TEMP_TICKET_TEST_MODE) {
+                showBottomNav(true);
+                setCurrentFragment(exploreFragment);
+                bottomNav.setSelectedItemId(R.id.nav_explore);
+                return;
+            }
+
             // Hide bar
             showBottomNav(false);
 
@@ -151,4 +169,3 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 }
-
