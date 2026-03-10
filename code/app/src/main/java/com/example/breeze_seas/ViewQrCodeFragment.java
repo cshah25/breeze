@@ -55,7 +55,7 @@ public class ViewQrCodeFragment extends Fragment {
         }
 
         view.findViewById(R.id.btnManageEntrants).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Manage Entrants (TODO)", Toast.LENGTH_SHORT).show()
+                ((MainActivity) requireActivity()).openSecondaryFragment(new ManageEntrantsFragment())
         );
 
         view.findViewById(R.id.btnClose).setOnClickListener(v ->
