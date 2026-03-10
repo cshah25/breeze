@@ -27,7 +27,7 @@ public class ActiveTicketsFragmentTest {
     @Before
     public void setUp() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(
-                TicketsRepositoryTestUtils::resetDemoData
+                TicketDBTestUtils::resetDemoData
         );
         scenario = FragmentScenario.launchInContainer(
                 ActiveTicketsFragment.class,

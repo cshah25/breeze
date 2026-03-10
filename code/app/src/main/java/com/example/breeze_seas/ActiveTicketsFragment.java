@@ -16,15 +16,15 @@ import com.google.android.material.snackbar.Snackbar;
  * ActiveTicketsFragment displays the entrant's active ticket states.
  *
  * <p>Current state:
- * - Renders temporary repository data in a RecyclerView to validate card UI.
+ * - Loads active tickets through {@link TicketDB}.
  *
  * <p>Outstanding:
- * - Replace repository seed data with Firestore loading after the ticket schema exists.
+ * - Add live invitation/back-up states once those Firestore statuses are finalized.
  */
 public class ActiveTicketsFragment extends Fragment {
 
-    private final TicketsRepository repository = TicketsRepository.getInstance();
-    private final TicketsRepository.Listener ticketsListener = this::renderTickets;
+    private final TicketDB ticketDb = TicketDB.getInstance();
+    private final TicketDB.Listener ticketsListener = this::renderTickets;
 
     private ActiveTicketsAdapter adapter;
 
@@ -55,13 +55,14 @@ public class ActiveTicketsFragment extends Fragment {
         });
 
         recyclerView.setAdapter(adapter);
-        repository.addListener(ticketsListener);
+        ticketDb.addListener(ticketsListener);
+        ticketDb.refreshTickets(requireContext());
         renderTickets();
     }
 
     @Override
     public void onDestroyView() {
-        repository.removeListener(ticketsListener);
+        ticketDb.removeListener(ticketsListener);
         adapter = null;
         super.onDestroyView();
     }
@@ -71,7 +72,7 @@ public class ActiveTicketsFragment extends Fragment {
             return;
         }
 
-        adapter.submitList(repository.getActiveTickets());
+        adapter.submitList(ticketDb.getActiveTickets());
     }
 
     /**
@@ -97,11 +98,11 @@ public class ActiveTicketsFragment extends Fragment {
      * Shows a centered dialog for the "Action Required" state where the entrant can accept or decline.
      *
      * <p>Current behavior:
-     * - Accept: moves the item through the temporary repository and shows confirmation.
-     * - Decline: removes the invite from the temporary repository after confirmation.
+     * - Accept: moves the item through demo data and shows confirmation in tests.
+     * - Decline: removes the invite from the same demo-only path in tests.
      *
      * <p>Outstanding:
-     * - Replace repository updates with DBConnector-backed writes once the schema is finalized.
+     * - Wire live accept/decline updates when invited status integration is implemented.
      *
      * Source:
      * Google Material Design, "Dialogs", accessed 2026-03-04:
@@ -122,7 +123,7 @@ public class ActiveTicketsFragment extends Fragment {
                 .setMessage(message)
                 .setPositiveButton("Accept Invitation", (dialog, which) -> {
                     dialog.dismiss();
-                    repository.acceptInvitation(ticket);
+                    ticketDb.acceptInvitation(ticket);
                     Snackbar.make(rootView, "Invitation accepted. Ticket moved to Attending.", Snackbar.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Decline", (dialog, which) -> {
@@ -143,7 +144,7 @@ public class ActiveTicketsFragment extends Fragment {
                 .setMessage("If you decline, your spot will be offered to someone in the backup pool.")
                 .setPositiveButton("Yes, decline", (d, w) -> {
                     d.dismiss();
-                    repository.declineInvitation(ticket);
+                    ticketDb.declineInvitation(ticket);
                     Snackbar.make(rootView, "Invitation declined", Snackbar.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", (d, w) -> d.dismiss())

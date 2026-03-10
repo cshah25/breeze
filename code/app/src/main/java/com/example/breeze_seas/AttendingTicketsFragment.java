@@ -10,17 +10,19 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-/*** The AttendingTicketsFragment displays the events that the entrant has accepted and will attend.
- ** <p>Intended Content:* - Accepted (Attending).
+/**
+ * AttendingTicketsFragment displays the events that the entrant has accepted and will attend.
  *
- * <p>Current state:* - Renders temporary repository data while the backend contract is still pending.
- ** <p>Outstanding/Future Work:* - Replace repository seed data with Firestore loading after the
- * event/ticket schema is finalized.
+ * <p>Current state:
+ * - Loads accepted tickets through {@link TicketDB}.
+ *
+ * <p>Outstanding:
+ * - Replace fallback display values once event location/ticket-type fields are finalized.
  */
 public class AttendingTicketsFragment extends Fragment {
 
-    private final TicketsRepository repository = TicketsRepository.getInstance();
-    private final TicketsRepository.Listener ticketsListener = this::renderTickets;
+    private final TicketDB ticketDb = TicketDB.getInstance();
+    private final TicketDB.Listener ticketsListener = this::renderTickets;
 
     private AttendingTicketsAdapter adapter;
     private RecyclerView recyclerView;
@@ -40,13 +42,14 @@ public class AttendingTicketsFragment extends Fragment {
 
         adapter = new AttendingTicketsAdapter(this::openTicket);
         recyclerView.setAdapter(adapter);
-        repository.addListener(ticketsListener);
+        ticketDb.addListener(ticketsListener);
+        ticketDb.refreshTickets(requireContext());
         renderTickets();
     }
 
     @Override
     public void onDestroyView() {
-        repository.removeListener(ticketsListener);
+        ticketDb.removeListener(ticketsListener);
         recyclerView = null;
         emptyState = null;
         adapter = null;
@@ -58,7 +61,7 @@ public class AttendingTicketsFragment extends Fragment {
             return;
         }
 
-        java.util.List<AttendingTicketUIModel> tickets = repository.getAttendingTickets();
+        java.util.List<AttendingTicketUIModel> tickets = ticketDb.getAttendingTickets();
         boolean hasTickets = !tickets.isEmpty();
         adapter.submitList(tickets);
         recyclerView.setVisibility(hasTickets ? View.VISIBLE : View.GONE);
