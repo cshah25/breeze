@@ -1,7 +1,5 @@
 package com.example.breeze_seas;
 
-import static androidx.fragment.app.FragmentManagerKt.commit;
-
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -9,10 +7,6 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.viewpager2.widget.ViewPager2;
-
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 
 /**
  * WelcomeScreenFragment is a {@link Fragment} subclass.
@@ -35,7 +29,7 @@ public class WelcomeScreenFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Bind Started Button
-        Button startButton = view.findViewById(R.id.welcomeScreenStartButton);
+        Button startButton = view.findViewById(R.id.welcome_screen_start_button);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override

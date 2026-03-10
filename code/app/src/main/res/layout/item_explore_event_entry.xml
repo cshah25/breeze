@@ -7,6 +7,7 @@
 
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/explore_event_entry_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
@@ -20,7 +21,7 @@
             android:layout_height="match_parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/exploreEventEntryWrapper"
+                android:id="@+id/explore_event_entry_wrapper"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_marginStart="5dp"
@@ -28,12 +29,12 @@
                 android:layout_marginEnd="5dp"
                 android:layout_marginBottom="5dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/exploreEventEntryImage"
+                app:layout_constraintEnd_toStartOf="@+id/explore_event_entry_image"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/exploreEventEntryTitle"
+                    android:id="@+id/explore_event_entry_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Event 1"
@@ -45,7 +46,7 @@
                     app:layout_constraintVertical_bias="0.31" />
 
                 <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/exploreEventEntryEndDate"
+                    android:id="@+id/explore_event_entry_end_date"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:layout_marginTop="10dp"
@@ -54,19 +55,19 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/exploreEventEntryTitle" />
+                    app:layout_constraintTop_toBottomOf="@+id/explore_event_entry_title" />
 
                 <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/exploreEventEntryPerson"
+                    android:id="@+id/explore_event_entry_person"
                     android:layout_width="21dp"
                     android:layout_height="21dp"
                     android:src="@drawable/ic_person"
                     app:layout_constraintDimensionRatio="1:1"
-                    app:layout_constraintEnd_toStartOf="@+id/exploreEventEntryCapacityString"
+                    app:layout_constraintEnd_toStartOf="@+id/explore_event_entry_capacity_string"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/exploreEventEntryCapacityString"
+                    android:id="@+id/explore_event_entry_capacity_string"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="34/60"
@@ -77,7 +78,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/exploreEventEntryImage"
+                android:id="@+id/explore_event_entry_image"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
                 android:layout_marginStart="5dp"
@@ -87,10 +88,10 @@
                 android:scaleType="centerCrop"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/exploreEventEntryWrapper"
+                app:layout_constraintStart_toEndOf="@+id/explore_event_entry_wrapper"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.0"
-                app:shapeAppearanceOverlay="@style/roundedCorners"
+                app:shapeAppearanceOverlay="@style/RoundedCorners"
                 tools:srcCompat="@tools:sample/backgrounds/scenic" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

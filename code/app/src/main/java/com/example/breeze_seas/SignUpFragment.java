@@ -1,11 +1,8 @@
 package com.example.breeze_seas;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -48,14 +45,14 @@ public class SignUpFragment extends Fragment {
         this.androidID = getArguments().getString("androidID");
 
         // Bind views
-        EditText firstNameInput = view.findViewById(R.id.signupFirstnameInput);
-        EditText lastNameInput = view.findViewById(R.id.signupLastnameInput);
-        EditText userNameInput = view.findViewById(R.id.signupUsernameInput);
-        EditText emailInput = view.findViewById(R.id.signupEmailInput);
-        EditText phoneNumberInput = view.findViewById(R.id.signupPhoneNumberInput);
+        EditText firstNameInput = view.findViewById(R.id.signup_firstname_input);
+        EditText lastNameInput = view.findViewById(R.id.signup_lastname_input);
+        EditText userNameInput = view.findViewById(R.id.signup_username_input);
+        EditText emailInput = view.findViewById(R.id.signup_email_input);
+        EditText phoneNumberInput = view.findViewById(R.id.signup_phone_number_input);
 
         // Bind button
-        Button confirmButton = view.findViewById(R.id.signupConfirmButton);
+        Button confirmButton = view.findViewById(R.id.signup_confirm_button);
         confirmButton.setOnClickListener(onClick -> {
             // Grab and update strings
             this.firstName = firstNameInput.getText().toString();
