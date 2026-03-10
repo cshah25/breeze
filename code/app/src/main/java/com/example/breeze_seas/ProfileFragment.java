@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 /*** ProfileFragment is a top-level destination accessed via Bottom Navigation.
@@ -63,32 +64,27 @@ public class ProfileFragment extends Fragment {
 
         // Toggle first name field when edit icon is clicked
         editFirstNameBtn.setOnClickListener(v -> {
-            boolean isEnabled = firstNameLayout.isEnabled();
-            firstNameLayout.setEnabled(!isEnabled);
+            toggleEditField(firstNameLayout);
         });
 
         // Toggle last name field when edit icon is clicked
         editLastNameBtn.setOnClickListener(v -> {
-            boolean isEnabled = lastNameLayout.isEnabled();
-            lastNameLayout.setEnabled(!isEnabled);
+            toggleEditField(lastNameLayout);
         });
 
         // Toggle username field when edit icon is clicked
         editUserNameBtn.setOnClickListener(v -> {
-            boolean isEnabled = userNameLayout.isEnabled();
-            userNameLayout.setEnabled(!isEnabled);
+            toggleEditField(userNameLayout);
         });
 
         // Toggle email field when edit icon is clicked
         editEmailBtn.setOnClickListener(v -> {
-            boolean isEnabled = emailLayout.isEnabled();
-            emailLayout.setEnabled(!isEnabled);
+            toggleEditField(emailLayout);
         });
 
         // Toggle phone number field when edit icon is clicked
         editPhoneBtn.setOnClickListener(v -> {
-            boolean isEnabled = phoneLayout.isEnabled();
-            phoneLayout.setEnabled(!isEnabled);
+            toggleEditField(phoneLayout);
         });
 
         // Save button
@@ -96,14 +92,27 @@ public class ProfileFragment extends Fragment {
             Toast.makeText(getContext(), "Profile Saved!", Toast.LENGTH_SHORT).show();
         });
 
-        // Switch
+        deleteBtn.setOnClickListener(v ->
+                Toast.makeText(getContext(), "Delete Profile (TODO)", Toast.LENGTH_SHORT).show()
+        );
+
         optOutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // Handle opt-out preference
+            String msg = isChecked ? "Notifications turned off" : "Notifications turned on";
+            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
         });
-        
+    }
+
+    private void toggleEditField(TextInputLayout layout) {
+        if (layout.getEditText() == null) return;
+
+        boolean isEnabled = layout.getEditText().isEnabled();
+        layout.getEditText().setEnabled(!isEnabled);
+
+        if (!isEnabled) {
+            layout.getEditText().requestFocus();
+            layout.getEditText().setSelection(layout.getEditText().getText().length());
+        }
     }
 }
-
-
 
 
