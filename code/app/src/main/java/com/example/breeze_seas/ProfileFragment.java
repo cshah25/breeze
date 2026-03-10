@@ -11,11 +11,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-
-import org.w3c.dom.Text;
 
 /*** ProfileFragment is a top-level destination accessed via Bottom Navigation.
  *
@@ -23,8 +22,12 @@ import org.w3c.dom.Text;
  ** <p>Outstanding/Future Work:* - Set up entrant profile viewing/editing and notification choices.
  */
 public class ProfileFragment extends Fragment {
-    private TextInputLayout nameLayout, emailLayout, phoneLayout;
-    private ImageButton editNameBtn, editEmailBtn, editPhoneBtn;
+
+    private ShapeableImageView profileImageView;
+    private TextInputLayout firstNameLayout, lastNameLayout,
+            userNameLayout, emailLayout, phoneLayout;
+    private ImageButton editFirstNameBtn, editLastNameBtn,
+            editUserNameBtn, editEmailBtn, editPhoneBtn;
     private MaterialButton saveBtn, deleteBtn;
     private MaterialSwitch optOutSwitch;
 
@@ -34,23 +37,23 @@ public class ProfileFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        nameLayout = view.findViewById(R.id.name_filled_text_field);
+        profileImageView = view.findViewById(R.id.profile_image);
+
+        firstNameLayout = view.findViewById(R.id.first_name_filled_text_field);
+        lastNameLayout = view.findViewById(R.id.last_name_filled_text_field);
+        userNameLayout = view.findViewById(R.id.user_name_filled_text_field);
         emailLayout = view.findViewById(R.id.email_filled_text_field);
         phoneLayout = view.findViewById(R.id.phone_number_filled_text_field);
 
-        editNameBtn = view.findViewById(R.id.edit_name_button);
-        editEmailBtn = view.findViewById(R.id.edit_email_button);
-        editPhoneBtn = view.findViewById(R.id.edit_phone_number_button);
-
-        editNameBtn = view.findViewById(R.id.edit_name_button);
+        editFirstNameBtn = view.findViewById(R.id.edit_first_name_button);
+        editLastNameBtn = view.findViewById(R.id.edit_last_name_button);
+        editUserNameBtn = view.findViewById(R.id.edit_user_name_button);
         editEmailBtn = view.findViewById(R.id.edit_email_button);
         editPhoneBtn = view.findViewById(R.id.edit_phone_number_button);
 
         saveBtn = view.findViewById(R.id.save_button);
         deleteBtn = view.findViewById(R.id.delete_profile_button);
         optOutSwitch = view.findViewById(R.id.opt_out_switch);
-
-        setupListeners();
 
         return view;
     }
@@ -59,38 +62,57 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Toggle name field when edit icon is clicked
-        editNameBtn.setOnClickListener(v -> {
-            boolean isEnabled = nameLayout.isEnabled();
-            nameLayout.setEnabled(!isEnabled);
+        // Toggle first name field when edit icon is clicked
+        editFirstNameBtn.setOnClickListener(v -> {
+            toggleEditField(firstNameLayout);
+        });
+
+        // Toggle last name field when edit icon is clicked
+        editLastNameBtn.setOnClickListener(v -> {
+            toggleEditField(lastNameLayout);
+        });
+
+        // Toggle username field when edit icon is clicked
+        editUserNameBtn.setOnClickListener(v -> {
+            toggleEditField(userNameLayout);
         });
 
         // Toggle email field when edit icon is clicked
         editEmailBtn.setOnClickListener(v -> {
-            boolean isEnabled = emailLayout.isEnabled();
-            emailLayout.setEnabled(!isEnabled);
+            toggleEditField(emailLayout);
         });
 
         // Toggle phone number field when edit icon is clicked
         editPhoneBtn.setOnClickListener(v -> {
-            boolean isEnabled = phoneLayout.isEnabled();
-            phoneLayout.setEnabled(!isEnabled);
+            toggleEditField(phoneLayout);
         });
 
         // Save button
         saveBtn.setOnClickListener(v -> {
-            String name = nameLayout.getEditText().getText().toString();
             Toast.makeText(getContext(), "Profile Saved!", Toast.LENGTH_SHORT).show();
         });
 
-        // Switch
+        deleteBtn.setOnClickListener(v ->
+                Toast.makeText(getContext(), "Delete Profile (TODO)", Toast.LENGTH_SHORT).show()
+        );
+
         optOutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // Handle opt-out preference
+            String msg = isChecked ? "Notifications turned off" : "Notifications turned on";
+            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
         });
-        
+    }
+
+    private void toggleEditField(TextInputLayout layout) {
+        if (layout.getEditText() == null) return;
+
+        boolean isEnabled = layout.getEditText().isEnabled();
+        layout.getEditText().setEnabled(!isEnabled);
+
+        if (!isEnabled) {
+            layout.getEditText().requestFocus();
+            layout.getEditText().setSelection(layout.getEditText().getText().length());
+        }
     }
 }
-
-
 
 
