@@ -11,12 +11,11 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-/*** TicketsFragment is the top-level "Tickets" destination displayed in Bottom Navigation.
- ** <p>Role in Architecture:* - Contains three subscreens:
- * Active, Attending, and Past Events.*
- * <p>Current state:* - Sets up the tab/pager shell for repository-backed ticket fragments.
- ** <p> Outstanding/Future Work:* - Keep Firestore integration behind the ticket repository once
- * the event/ticket schema is implemented by the backend work.
+/**
+ * TicketsFragment is the top-level Tickets destination displayed in bottom navigation.
+ *
+ * <p>Current state:
+ * - Hosts the tab shell for {@link TicketDB}-backed ticket fragments.
  */
 public class TicketsFragment extends Fragment {
     // The tab switching implementation in this fragment was developed with Gemini,

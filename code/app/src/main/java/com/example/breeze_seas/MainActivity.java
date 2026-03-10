@@ -28,7 +28,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final boolean TEMP_TICKET_TEST_MODE = true;
 
     private final ExploreFragment exploreFragment = new ExploreFragment();
     private final TicketsFragment ticketsFragment = new TicketsFragment();
@@ -52,11 +51,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Get android ID
         this.androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-
-        if (TEMP_TICKET_TEST_MODE) {
-            initializeUI(savedInstanceState, null);
-            return;
-        }
 
         // Initialize UserDB
         UserDB userDBInstance = new UserDB();
@@ -98,13 +92,6 @@ public class MainActivity extends AppCompatActivity {
 
         //  user not found / login == false
         if (user == null) {
-            if (TEMP_TICKET_TEST_MODE) {
-                showBottomNav(true);
-                setCurrentFragment(exploreFragment);
-                bottomNav.setSelectedItemId(R.id.nav_explore);
-                return;
-            }
-
             // Hide bar
             showBottomNav(false);
 
@@ -117,9 +104,13 @@ public class MainActivity extends AppCompatActivity {
         }
         // Default tab
         // TODO: Transfer user data to exploreFragment
-        else if (savedInstanceState == null) {
-            setCurrentFragment(exploreFragment);
-            bottomNav.setSelectedItemId(R.id.nav_explore);
+        else {
+            showBottomNav(true);
+            if (savedInstanceState == null
+                    || getSupportFragmentManager().findFragmentById(R.id.fragment_container) == null) {
+                setCurrentFragment(exploreFragment);
+                bottomNav.setSelectedItemId(R.id.nav_explore);
+            }
         }
 
     }

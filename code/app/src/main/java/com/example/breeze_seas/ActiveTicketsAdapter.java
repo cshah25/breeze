@@ -22,7 +22,7 @@ import java.util.List;
  * - Binds {@link TicketUIModel} data to the ticket card layout.
  *
  * <p>Outstanding:
- * - Replace hardcoded demo data with Firestore-backed lists.
+ * - Keep binding logic stable while TicketDB expands to more ticket states.
  * - Add stable IDs when using real Firestore document IDs.
  */
 public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdapter.TicketViewHolder> {
@@ -68,10 +68,10 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
         switch (ticket.getStatus()) {
 
             case PENDING:
-                holder.chip.setText("Pending");
+                holder.chip.setText("Waiting");
                 holder.icon.setImageResource(R.drawable.ic_clock);
-                holder.supporting.setText("Your entry is still in the running. We will notify you after registration closes and the draw is complete.");
-                holder.footer.setText("Awaiting for lottery to begin");
+                holder.supporting.setText("Your entry is in the waiting list. We will notify you when the organizer updates the draw outcome.");
+                holder.footer.setText("Awaiting selection outcome");
 
                 holder.chip.setChipBackgroundColor(ContextCompat.getColorStateList(holder.itemView.getContext(), android.R.color.white));
                 holder.chip.setTextColor(black);
