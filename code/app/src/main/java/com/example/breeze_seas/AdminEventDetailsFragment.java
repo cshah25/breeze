@@ -11,7 +11,7 @@ public class AdminEventDetailsFragment extends Fragment {
 
     private String eventId;
 
-    public AdminEventDetailsFragment() { super(R.layout.fragment_event_details); }
+    public AdminEventDetailsFragment() { super(R.layout.fragment_admin_event_details); }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -21,7 +21,5 @@ public class AdminEventDetailsFragment extends Fragment {
         if (getArguments() != null) {
             eventId = getArguments().getString("eventId");
         }
-
-        // TODO: Whoever builds this fragment will use 'eventId' to query EventDB here!
     }
 }
