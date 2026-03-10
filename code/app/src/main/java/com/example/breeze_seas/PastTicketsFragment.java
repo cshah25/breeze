@@ -20,16 +20,15 @@ import com.google.android.material.snackbar.Snackbar;
  * - Optional cancelled states
  *
  * <p>Current state:
- * - Renders temporary repository data while backend work is still in progress.
+ * - Returns no live entries yet because only waiting and accepted states are wired.
  *
  * <p>Outstanding:
- * - Replace repository seed data with Firestore-backed loading once
- *   the event/ticket schema exists.
+ * - Add past-state mappings once declined/cancelled/not-selected states are finalized.
  */
 public class PastTicketsFragment extends Fragment {
 
-    private final TicketsRepository repository = TicketsRepository.getInstance();
-    private final TicketsRepository.Listener ticketsListener = this::renderTickets;
+    private final TicketDB ticketDb = TicketDB.getInstance();
+    private final TicketDB.Listener ticketsListener = this::renderTickets;
 
     private PastTicketsAdapter adapter;
 
@@ -50,13 +49,14 @@ public class PastTicketsFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        repository.addListener(ticketsListener);
+        ticketDb.addListener(ticketsListener);
+        ticketDb.refreshTickets(requireContext());
         renderTickets();
     }
 
     @Override
     public void onDestroyView() {
-        repository.removeListener(ticketsListener);
+        ticketDb.removeListener(ticketsListener);
         adapter = null;
         super.onDestroyView();
     }
@@ -66,6 +66,6 @@ public class PastTicketsFragment extends Fragment {
             return;
         }
 
-        adapter.submitList(repository.getPastTickets());
+        adapter.submitList(ticketDb.getPastTickets());
     }
 }

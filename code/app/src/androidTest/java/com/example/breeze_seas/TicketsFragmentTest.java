@@ -24,7 +24,7 @@ public class TicketsFragmentTest {
     @Before
     public void setUp() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(
-                TicketsRepositoryTestUtils::resetDemoData
+                TicketDBTestUtils::resetDemoData
         );
         scenario = FragmentScenario.launchInContainer(
                 TicketsFragment.class,
