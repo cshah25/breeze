@@ -36,9 +36,6 @@ public class ProfileFragment extends Fragment {
     private MaterialButton saveBtn, deleteBtn;
     private MaterialSwitch optOutSwitch;
 
-    String firstNameInput, lastNameInput, userNameInput,
-            emailInput, phoneInput;
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -76,37 +73,36 @@ public class ProfileFragment extends Fragment {
         // Toggle first name field when edit icon is clicked
         editFirstNameBtn.setOnClickListener(v -> {
             toggleEditField(firstNameLayout);
-            firstNameInput = firstNameLayout.getEditText().getText().toString();
-            Toast.makeText(getContext(), firstNameInput,
-                    Toast.LENGTH_SHORT).show();
+            String firstNameInput = getInput(firstNameLayout);
+            currentUser.setFirstName(firstNameInput);
         });
 
         // Toggle last name field when edit icon is clicked
         editLastNameBtn.setOnClickListener(v -> {
             toggleEditField(lastNameLayout);
-            Toast.makeText(getContext(), lastNameInput,
-                    Toast.LENGTH_SHORT).show();
+            String lastNameInput = getInput(firstNameLayout);
+            currentUser.setLastName(lastNameInput);
         });
 
         // Toggle username field when edit icon is clicked
         editUserNameBtn.setOnClickListener(v -> {
             toggleEditField(userNameLayout);
-            Toast.makeText(getContext(), userNameInput,
-                    Toast.LENGTH_SHORT).show();
+            String userNameInput = getInput(userNameLayout);
+            currentUser.setUserName(userNameInput);
         });
 
         // Toggle email field when edit icon is clicked
         editEmailBtn.setOnClickListener(v -> {
             toggleEditField(emailLayout);
-            Toast.makeText(getContext(), emailInput,
-                    Toast.LENGTH_SHORT).show();
+            String emailInput = getInput(emailLayout);
+            currentUser.setEmail(emailInput);
         });
 
         // Toggle phone number field when edit icon is clicked
         editPhoneBtn.setOnClickListener(v -> {
             toggleEditField(phoneLayout);
-            Toast.makeText(getContext(), phoneInput,
-                    Toast.LENGTH_SHORT).show();
+            String phoneInput = getInput(phoneLayout);
+            currentUser.setPhoneNumber(phoneInput);
         });
 
         // Save button
@@ -144,6 +140,13 @@ public class ProfileFragment extends Fragment {
                 imm.showSoftInput(layout.getEditText(),0);
             }
         }
+    }
+
+    public String getInput(TextInputLayout layout){
+            String input;
+            input = layout.getEditText().
+                getText().toString();
+            return input;
     }
 
     private void fetchUserData(String deviceId) {
