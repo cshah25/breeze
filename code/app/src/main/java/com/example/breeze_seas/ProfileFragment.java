@@ -1,4 +1,5 @@
 package com.example.breeze_seas;
+import android.content.Context;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -99,7 +100,6 @@ public class ProfileFragment extends Fragment {
         // Toggle email field when edit icon is clicked
         editEmailBtn.setOnClickListener(v -> {
             toggleEditField(emailLayout);
-
         });
 
         // Toggle phone number field when edit icon is clicked
