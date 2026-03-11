@@ -29,7 +29,7 @@ public class UserDB {
      */
     public UserDB() {
         this.db = DBConnector.getDb();
-        this.userRef = db.collection("User");
+        this.userRef = db.collection("users");
     }
 
     /**
