@@ -26,7 +26,6 @@ import java.util.Locale;
  * <p>Current integration scope:
  * - uses the agreed device-based schema from {@code events/{eventId}/participants/{deviceId}}
  * - supports live Firestore loading for the agreed participant statuses
- * - keeps demo-mode seeding available for instrumented tests only
  *
  * <p>Outstanding:
  * - replace fallback display labels once the final event metadata contract is fully implemented
@@ -49,7 +48,6 @@ public final class TicketDB {
     private final List<AttendingTicketUIModel> attendingTickets = new ArrayList<>();
     private final List<PastEventUIModel> pastTickets = new ArrayList<>();
 
-    private boolean useDemoData = false;
     @Nullable
     private String currentDeviceId;
 
@@ -76,17 +74,6 @@ public final class TicketDB {
     }
 
     public void refreshTickets(@NonNull Context context) {
-        boolean showDemoData;
-
-        synchronized (this) {
-            showDemoData = useDemoData;
-        }
-
-        if (showDemoData) {
-            notifyListeners();
-            return;
-        }
-
         String deviceId = getCurrentDeviceId(context.getApplicationContext());
         if (deviceId == null) {
             Log.w(TAG, "No current device id could be resolved for Tickets.");
@@ -123,48 +110,11 @@ public final class TicketDB {
     }
 
     public void acceptInvitation(@NonNull TicketUIModel ticket) {
-        boolean changed = false;
-        boolean showDemoData;
-
-        synchronized (this) {
-            showDemoData = useDemoData;
-            if (useDemoData && removeActionRequiredTicket(ticket.getEventId())) {
-                if (!containsAttendingTicket(ticket.getEventId())) {
-                    attendingTickets.add(0, buildAttendingTicket(ticket));
-                }
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            notifyListeners();
-            return;
-        }
-
-        if (!showDemoData) {
-            updateParticipantStatus(ticket.getEventId(), "accepted");
-        }
+        updateParticipantStatus(ticket.getEventId(), "accepted");
     }
 
     public void declineInvitation(@NonNull TicketUIModel ticket) {
-        boolean changed = false;
-        boolean showDemoData;
-
-        synchronized (this) {
-            showDemoData = useDemoData;
-            if (useDemoData) {
-                changed = removeActionRequiredTicket(ticket.getEventId());
-            }
-        }
-
-        if (changed) {
-            notifyListeners();
-            return;
-        }
-
-        if (!showDemoData) {
-            updateParticipantStatus(ticket.getEventId(), "declined");
-        }
+        updateParticipantStatus(ticket.getEventId(), "declined");
     }
 
     @Nullable
@@ -227,7 +177,7 @@ public final class TicketDB {
                             });
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to load waiting-list entries for current user.", e);
+                    Log.e(TAG, "Failed to load participant entries for current user.", e);
                     replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
                 });
     }
@@ -436,117 +386,6 @@ public final class TicketDB {
         }
 
         notifyListeners();
-    }
-
-    private void seedDemoData() {
-        activeTickets.add(new TicketUIModel(
-                "e1",
-                "Piano Lessons for Beginners",
-                "Registration closes tomorrow",
-                TicketUIModel.Status.PENDING
-        ));
-        activeTickets.add(new TicketUIModel(
-                "e2",
-                "Tech Conference 2026",
-                "Lottery drawn • Backup pool",
-                TicketUIModel.Status.BACKUP
-        ));
-        activeTickets.add(new TicketUIModel(
-                "e3",
-                "Community Dance Night",
-                "Invitation expires at 6:00 PM",
-                TicketUIModel.Status.ACTION_REQUIRED
-        ));
-
-        attendingTickets.add(new AttendingTicketUIModel(
-                "a1",
-                "Summer Music Festival",
-                "Sat, Jul 18 • 7:30 PM",
-                "Riverfront Stage, Edmonton",
-                "Admit One",
-                "Gate opens at 6:45 PM. Keep this ticket ready for the usher.",
-                "Open QR pass"
-        ));
-        attendingTickets.add(new AttendingTicketUIModel(
-                "a2",
-                "Art Gallery Opening",
-                "Fri, Oct 2 • 6:30 PM",
-                "North Hall Gallery",
-                "Reserved Entry",
-                "Present this pass at the entrance desk for your reserved time slot.",
-                "Open QR pass"
-        ));
-
-        pastTickets.add(new PastEventUIModel(
-                "Beginner Swimming Lessons",
-                "Wed, Jan 15 • 5:30 PM",
-                "Kinsmen Sports Centre",
-                "Attended",
-                "Completed successfully",
-                R.drawable.ic_ticket
-        ));
-        pastTickets.add(new PastEventUIModel(
-                "Piano Lessons for Beginners",
-                "Mon, Feb 10 • 4:00 PM",
-                "West End Music Studio",
-                "Not selected",
-                "Lottery closed without selection",
-                R.drawable.ic_info
-        ));
-        pastTickets.add(new PastEventUIModel(
-                "Community Dance Night",
-                "Sat, Feb 22 • 8:00 PM",
-                "Old Strathcona Hall",
-                "Declined",
-                "Invitation released back to the pool",
-                R.drawable.ic_clock
-        ));
-    }
-
-    private boolean removeActionRequiredTicket(@NonNull String eventId) {
-        for (int i = 0; i < activeTickets.size(); i++) {
-            TicketUIModel ticket = activeTickets.get(i);
-            if (ticket.getEventId().equals(eventId)
-                    && ticket.getStatus() == TicketUIModel.Status.ACTION_REQUIRED) {
-                activeTickets.remove(i);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean containsAttendingTicket(@NonNull String eventId) {
-        for (AttendingTicketUIModel ticket : attendingTickets) {
-            if (ticket.getEventId().equals(eventId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @NonNull
-    private AttendingTicketUIModel buildAttendingTicket(@NonNull TicketUIModel ticket) {
-        if ("e3".equals(ticket.getEventId())) {
-            return new AttendingTicketUIModel(
-                    ticket.getEventId(),
-                    ticket.getTitle(),
-                    "Sat, Mar 21 • 7:00 PM",
-                    "East Hall, Edmonton Arts Centre",
-                    "Dance Floor Entry",
-                    "Doors open at 6:15 PM. Show this code at the main check-in desk.",
-                    "Open QR pass"
-            );
-        }
-
-        return new AttendingTicketUIModel(
-                ticket.getEventId(),
-                ticket.getTitle(),
-                ticket.getDateLabel(),
-                "Venue details available in the event page",
-                "General Admission",
-                "Show this ticket during event check-in.",
-                "Open QR pass"
-        );
     }
 
     private void notifyListeners() {
