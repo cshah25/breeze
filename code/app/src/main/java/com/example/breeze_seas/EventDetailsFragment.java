@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -15,7 +16,7 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textview.MaterialTextView;
 
 public class EventDetailsFragment extends Fragment {
-
+    private ShapeableImageView returnButton;
     private MaterialTextView eventTitle;
     private ShapeableImageView eventPoster;
     private MaterialButton viewQRCodeButton;
@@ -64,6 +65,12 @@ public class EventDetailsFragment extends Fragment {
         eventInviteDeclinedText = view.findViewById(R.id.event_details_invite_declined_text);
 
         // Buttons
+        returnButton = view.findViewById(R.id.event_details_return_button);
+        returnButton.setOnClickListener(v -> {
+            getParentFragmentManager()
+                    .popBackStack();
+        });
+
         viewQRCodeButton = view.findViewById(R.id.event_details_view_QRCode_button);
         viewQRCodeButton.setOnClickListener(v -> {
             // TODO: implement logic to show QRCode

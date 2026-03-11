@@ -53,6 +53,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         getActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, new EventDetailsFragment())
+                .addToBackStack(null)
                 .commit();
     }
 
