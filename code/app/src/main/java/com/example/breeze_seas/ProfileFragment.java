@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputLayout;
@@ -83,44 +84,69 @@ public class ProfileFragment extends Fragment {
         // Toggle first name field when edit icon is clicked
         editFirstNameBtn.setOnClickListener(v -> {
             toggleEditField(firstNameLayout);
-            String firstNameInput = getInput(firstNameLayout);
-            currentUser.setFirstName(firstNameInput);
         });
 
         // Toggle last name field when edit icon is clicked
         editLastNameBtn.setOnClickListener(v -> {
             toggleEditField(lastNameLayout);
-            String lastNameInput = getInput(lastNameLayout);
-            currentUser.setLastName(lastNameInput);
         });
 
         // Toggle username field when edit icon is clicked
         editUserNameBtn.setOnClickListener(v -> {
             toggleEditField(userNameLayout);
-            String userNameInput = getInput(userNameLayout);
-            currentUser.setUserName(userNameInput);
         });
 
         // Toggle email field when edit icon is clicked
         editEmailBtn.setOnClickListener(v -> {
             toggleEditField(emailLayout);
-            String emailInput = getInput(emailLayout);
-            currentUser.setEmail(emailInput);
+
         });
 
         // Toggle phone number field when edit icon is clicked
         editPhoneBtn.setOnClickListener(v -> {
             toggleEditField(phoneLayout);
-            String phoneInput = getInput(phoneLayout);
-            currentUser.setPhoneNumber(phoneInput);
         });
 
         // Save button
         saveBtn.setOnClickListener(v -> {
-            String deviceId = currentUser.getDeviceId();
-            Map<String,Object> updates = mapUpdates();
-            userDBInstance.updateUser(deviceId, updates);
-            Toast.makeText(getContext(), "Profile Saved!", Toast.LENGTH_SHORT).show();
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Save Changes")
+                    .setMessage("Are you sure you want to save your changes?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+
+                        String firstNameInput = getInput(firstNameLayout);
+                        currentUser.setFirstName(firstNameInput);
+                        String lastNameInput = getInput(lastNameLayout);
+                        currentUser.setLastName(lastNameInput);
+                        String userNameInput = getInput(userNameLayout);
+                        currentUser.setUserName(userNameInput);
+                        String emailInput = getInput(emailLayout);
+                        if (!emailInput.contains("@")){
+                            Toast.makeText(getContext(), "Incorrect Email!",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        currentUser.setEmail(emailInput);
+                        String phoneInput = getInput(phoneLayout);
+                        if (!phoneInput.matches("^[0-9 ]*$")) {
+                            Toast.makeText(getContext(), "Incorrect Phone Number!",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        currentUser.setPhoneNumber(phoneInput);
+
+
+
+                        String deviceId = currentUser.getDeviceId();
+                        Map<String,Object> updates = mapUpdates();
+                        userDBInstance.updateUser(deviceId, updates);
+                        Toast.makeText(getContext(), "Profile Saved!",
+                                Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("No", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
         });
 
         deleteBtn.setOnClickListener(v ->
