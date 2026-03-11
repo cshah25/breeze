@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -15,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
+
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -30,7 +32,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
  */
 public class MainActivity extends AppCompatActivity {
 
+
     private static final String TAG = "MainActivity";
+
 
     private final ExploreFragment exploreFragment = new ExploreFragment();
     private final TicketsFragment ticketsFragment = new TicketsFragment();
@@ -39,11 +43,13 @@ public class MainActivity extends AppCompatActivity {
     private final ProfileFragment profileFragment = new ProfileFragment();
     private SessionViewModel viewModel;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -53,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize viewModel (to share data between fragments)
         viewModel = new ViewModelProvider(this).get(SessionViewModel.class);
+
 
         // Get android ID
         String androidID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -102,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
     private void initializeUI(Bundle savedInstanceState, User user) {
         // Bind and setup bottom navigation bar
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_explore) setCurrentFragment(exploreFragment);
@@ -172,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
+
     public void openSecondaryFragment(Fragment fragment) {
         getSupportFragmentManager()
                 .beginTransaction()
@@ -198,3 +207,9 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 }
+
+
+
+
+
+
