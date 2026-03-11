@@ -3,6 +3,7 @@ import android.content.Context;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,6 +42,9 @@ public class ProfileFragment extends Fragment {
     private MaterialButton saveBtn, deleteBtn;
     private MaterialSwitch optOutSwitch;
 
+    // Stores tap count for profile pic
+    private int secretTapCount = 0;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -71,6 +75,19 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Click on profile picture 5 times to show admin password dialogue
+        View profileImage = view.findViewById(R.id.profile_image);
+
+        profileImage.setOnClickListener(v -> {
+            secretTapCount++;
+
+            if (secretTapCount >= 5) {
+                secretTapCount = 0;
+
+                verifyAdminStatus();
+            }
+        });
 
         // Initialize the view model, get the deviceId, and fetch user data
         SessionViewModel viewModel;
@@ -219,6 +236,37 @@ public class ProfileFragment extends Fragment {
         updates.put("phoneNumber", currentUser.getPhoneNumber());
 
         return updates;
+    }
+
+    private void verifyAdminStatus() {
+        String currentDeviceId = Settings.Secure.getString(
+                requireContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID
+        );
+
+        userDBInstance.getUser(currentDeviceId, new UserDB.OnUserLoadedListener() {
+            @Override
+            public void onUserLoaded(User user) {
+                if (user != null && user.isAdmin()) {
+                    Toast.makeText(getContext(), "Successfully verified!", Toast.LENGTH_SHORT).show();
+                    navigateToAdminDashboard();
+                } else {
+                    new AdminAuthDialogFragment().show(getParentFragmentManager(), "AdminAuth");
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(getContext(), "Error verifying account status", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void navigateToAdminDashboard() {
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new AdminDashboardFragment())
+                .addToBackStack(null)
+                .commit();
     }
 
 }
