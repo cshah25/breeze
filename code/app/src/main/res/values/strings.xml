@@ -8,7 +8,7 @@
     <string name="email">Email</string>
     <string name="save">Save</string>
     <string name="opt_out">Enable Notifications</string>
-    <string name="phone_number">Phone Number</string>
+    <string name="phone_number">Phone Number (Optional)</string>
     <string name="notifications">Notifications</string>
     <string name="selected">Selected</string>
     <string name="waiting_list">Waiting List</string>
