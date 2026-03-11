@@ -1,7 +1,9 @@
 package com.example.breeze_seas;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,13 +25,13 @@ public class TicketsFragment extends Fragment {
     private ViewPager2 viewPager;
     private TabLayoutMediator tabLayoutMediator;
 
-    public TicketsFragment() {
-        super(R.layout.fragment_tickets);
-    }
-
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        View view = inflater.inflate(R.layout.fragment_tickets, container, false);
 
         TabLayout tabLayout = view.findViewById(R.id.tickets_tab_layout);
         viewPager = view.findViewById(R.id.tickets_view_pager);
@@ -42,6 +44,8 @@ public class TicketsFragment extends Fragment {
             else tab.setText("Past Events");
         });
         tabLayoutMediator.attach();
+
+        return view;
     }
 
     @Override

@@ -5,10 +5,10 @@ package com.example.breeze_seas;
  *
  * <p>Role:
  * - Lightweight view model used by RecyclerView adapters to render ticket cards.
- * - This is NOT the final Firestore model; it exists to support UI wiring and prototyping.
+ * - Presentation model mapped from Firestore-backed ticket data.
  *
  * <p>Outstanding:
- * - Replace/extend with Firestore-backed ticket model once integration is implemented.
+ * - Expand with additional display fields only if the Tickets UI needs them.
  */
 public class TicketUIModel {
 
@@ -30,7 +30,7 @@ public class TicketUIModel {
         this.status = status;
     }
 
-    /** @return Firestore event id (or placeholder during prototyping). */
+    /** @return Firestore event id for the related event document. */
     public String getEventId() { return eventId; }
 
     /** @return Event title shown on the ticket card. */

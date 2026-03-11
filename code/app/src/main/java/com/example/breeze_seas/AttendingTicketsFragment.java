@@ -2,7 +2,9 @@ package com.example.breeze_seas;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,13 +30,13 @@ public class AttendingTicketsFragment extends Fragment {
     private RecyclerView recyclerView;
     private View emptyState;
 
-    public AttendingTicketsFragment() {
-        super(R.layout.fragment_attending_tickets);
-    }
-
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        View view = inflater.inflate(R.layout.fragment_attending_tickets, container, false);
 
         recyclerView = view.findViewById(R.id.attending_tickets_recycler);
         emptyState = view.findViewById(R.id.attending_tickets_empty_state);
@@ -45,6 +47,8 @@ public class AttendingTicketsFragment extends Fragment {
         ticketDb.addListener(ticketsListener);
         ticketDb.refreshTickets(requireContext());
         renderTickets();
+
+        return view;
     }
 
     @Override
