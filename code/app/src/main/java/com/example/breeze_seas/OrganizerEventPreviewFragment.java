@@ -18,34 +18,21 @@ import java.util.Locale;
 
 public class OrganizerEventPreviewFragment extends Fragment {
 
-    private static final String ARG_EVENT_ID = "eventId";
+    private Event currentEvent;
     private SessionViewModel viewModel;
 
     public OrganizerEventPreviewFragment() {
         super(R.layout.fragment_organizer_event_preview);
     }
 
-    public static OrganizerEventPreviewFragment newInstance(@NonNull String eventId) {
-        OrganizerEventPreviewFragment fragment = new OrganizerEventPreviewFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_EVENT_ID, eventId);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
-
-        String eventId = getArguments() == null ? null : getArguments().getString(ARG_EVENT_ID);
-        if (eventId == null || eventId.trim().isEmpty()) {
-            Toast.makeText(requireContext(), "Unable to open event preview", Toast.LENGTH_SHORT).show();
-            requireActivity().getSupportFragmentManager().popBackStack();
-            return;
-        }
-
+        currentEvent = viewModel.getEventShown().getValue();
+        String eventId=currentEvent.getEventId();
         view.findViewById(R.id.organizer_event_preview_back).setOnClickListener(v ->
                 requireActivity().getSupportFragmentManager().popBackStack()
         );
@@ -122,24 +109,19 @@ public class OrganizerEventPreviewFragment extends Fragment {
     }
 
     private void openManageEntrantsFragment(@NonNull Event event) {
-        try {
-            Class<?> fragmentClass = Class.forName("com.example.breeze_seas.ManageEntrantsFragment");
-            Object instance = fragmentClass.getDeclaredConstructor().newInstance();
-            if (!(instance instanceof Fragment)) {
-                throw new IllegalStateException("ManageEntrantsFragment is not a Fragment");
-            }
 
-            Fragment fragment = (Fragment) instance;
-            if (viewModel != null) {
-                viewModel.setEventShown(event);
-            }
+        if (viewModel != null) {
+            viewModel.setEventShown(event);
+        }
+
+        OrganizerListHostFragment fragment = new OrganizerListHostFragment();
+        if (requireActivity() instanceof MainActivity) {
             ((MainActivity) requireActivity()).openSecondaryFragment(fragment);
-        } catch (Exception e) {
-            Toast.makeText(
-                    requireContext(),
-                    R.string.organizer_event_preview_manage_unavailable,
-                    Toast.LENGTH_SHORT
-            ).show();
+        } else {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
         }
     }
 
