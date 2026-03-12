@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,6 +19,7 @@ import java.util.Locale;
 public class OrganizerEventPreviewFragment extends Fragment {
 
     private static final String ARG_EVENT_ID = "eventId";
+    private SessionViewModel viewModel;
 
     public OrganizerEventPreviewFragment() {
         super(R.layout.fragment_organizer_event_preview);
@@ -34,6 +36,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
 
         String eventId = getArguments() == null ? null : getArguments().getString(ARG_EVENT_ID);
         if (eventId == null || eventId.trim().isEmpty()) {
@@ -126,10 +130,9 @@ public class OrganizerEventPreviewFragment extends Fragment {
             }
 
             Fragment fragment = (Fragment) instance;
-            Bundle args = new Bundle();
-            args.putString("eventId", event.getId());
-            args.putString("eventName", event.getName());
-            fragment.setArguments(args);
+            if (viewModel != null) {
+                viewModel.setEventShown(event);
+            }
             ((MainActivity) requireActivity()).openSecondaryFragment(fragment);
         } catch (Exception e) {
             Toast.makeText(
@@ -149,10 +152,9 @@ public class OrganizerEventPreviewFragment extends Fragment {
             }
 
             Fragment fragment = (Fragment) instance;
-            Bundle args = new Bundle();
-            args.putString("eventId", event.getId());
-            args.putString("eventName", event.getName());
-            fragment.setArguments(args);
+            if (viewModel != null) {
+                viewModel.setEventShown(event);
+            }
             ((MainActivity) requireActivity()).openSecondaryFragment(fragment);
         } catch (Exception e) {
             Toast.makeText(
