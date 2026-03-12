@@ -1,7 +1,9 @@
 package com.example.breeze_seas;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,13 +30,13 @@ public class ActiveTicketsFragment extends Fragment {
 
     private ActiveTicketsAdapter adapter;
 
-    public ActiveTicketsFragment() {
-        super(R.layout.fragment_active_tickets);
-    }
-
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        View view = inflater.inflate(R.layout.fragment_active_tickets, container, false);
 
         RecyclerView recyclerView = view.findViewById(R.id.active_tickets_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -51,13 +53,19 @@ public class ActiveTicketsFragment extends Fragment {
                 return;
             }
 
-            Snackbar.make(view, "Clicked: " + ticket.getTitle(), Snackbar.LENGTH_SHORT).show();
+            Snackbar.make(
+                    view,
+                    "Your entry is still active. We will notify you when the draw status changes.",
+                    Snackbar.LENGTH_SHORT
+            ).show();
         });
 
         recyclerView.setAdapter(adapter);
         ticketDb.addListener(ticketsListener);
         ticketDb.refreshTickets(requireContext());
         renderTickets();
+
+        return view;
     }
 
     @Override

@@ -1,7 +1,9 @@
 package com.example.breeze_seas;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,19 +34,19 @@ public class PastTicketsFragment extends Fragment {
 
     private PastTicketsAdapter adapter;
 
-    public PastTicketsFragment() {
-        super(R.layout.fragment_past_tickets);
-    }
-
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
+        View view = inflater.inflate(R.layout.fragment_past_tickets, container, false);
 
         RecyclerView recyclerView = view.findViewById(R.id.past_tickets_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         adapter = new PastTicketsAdapter(event ->
-                Snackbar.make(view, "Past event history is demo UI for now.", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(view, "Past event details are not available yet.", Snackbar.LENGTH_SHORT).show()
         );
 
         recyclerView.setAdapter(adapter);
@@ -52,6 +54,8 @@ public class PastTicketsFragment extends Fragment {
         ticketDb.addListener(ticketsListener);
         ticketDb.refreshTickets(requireContext());
         renderTickets();
+
+        return view;
     }
 
     @Override
