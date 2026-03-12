@@ -92,4 +92,6 @@
     <string name="create_event_capacity_hint">Leave blank for no limit</string>
     <string name="create_event_geo_label">Require Geolocation</string>
     <string name="create_event_geo_hint">Ask entrants to join from their device location.</string>
+    <string name="send">Send</string>
+    <string name="notification_text">Enter your announcement here</string>
 </resources>
