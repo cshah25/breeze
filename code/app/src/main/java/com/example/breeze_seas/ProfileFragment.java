@@ -151,6 +151,7 @@ public class ProfileFragment extends Fragment {
                             return;
                         }
                         currentUser.setPhoneNumber(phoneInput);
+                        currentUser.setNotificationEnabled(optOutSwitch.isChecked());
 
 
 
@@ -166,13 +167,9 @@ public class ProfileFragment extends Fragment {
                     .show();
         });
 
-        deleteBtn.setOnClickListener(v ->
-                Toast.makeText(getContext(), "Delete Profile (TODO)", Toast.LENGTH_SHORT).show()
-        );
+        deleteBtn.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Delete Profile (TODO)", Toast.LENGTH_SHORT).show();
 
-        optOutSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            String msg = isChecked ? "Notifications turned off" : "Notifications turned on";
-            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -218,6 +215,10 @@ public class ProfileFragment extends Fragment {
                 emailLayout.getEditText().setText(user.getEmail());
                 phoneLayout.getEditText().setText(user.getPhoneNumber());
 
+                // Set the current state of the switch
+                optOutSwitch.setChecked(user.notificationEnabled());
+
+
             }
 
             @Override
@@ -234,6 +235,7 @@ public class ProfileFragment extends Fragment {
         updates.put("userName", currentUser.getUserName());
         updates.put("email", currentUser.getEmail());
         updates.put("phoneNumber", currentUser.getPhoneNumber());
+        updates.put("notificationEnabled", currentUser.notificationEnabled());
 
         return updates;
     }
