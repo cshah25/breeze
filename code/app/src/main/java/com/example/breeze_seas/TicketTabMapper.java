@@ -12,6 +12,9 @@ import java.util.List;
  */
 public final class TicketTabMapper {
 
+    /**
+     * Ticket states that can be classified into the three Tickets tabs.
+     */
     public enum TicketState {
         PENDING,
         BACKUP,
@@ -22,15 +25,27 @@ public final class TicketTabMapper {
         NOT_SELECTED
     }
 
+    /**
+     * Target tabs shown in the Tickets feature.
+     */
     public enum TicketTab {
         ACTIVE,
         ATTENDING,
         PAST
     }
 
+    /**
+     * Prevents instantiation of this pure utility class.
+     */
     private TicketTabMapper() {
     }
 
+    /**
+     * Maps a ticket state to the Tickets tab where it should appear.
+     *
+     * @param state Ticket state being classified.
+     * @return The tab that should contain the provided state.
+     */
     @NonNull
     public static TicketTab mapToTab(@NonNull TicketState state) {
         switch (state) {
@@ -48,6 +63,13 @@ public final class TicketTabMapper {
         }
     }
 
+    /**
+     * Filters a list of ticket states down to only those that belong to the requested tab.
+     *
+     * @param states Ticket states to filter.
+     * @param tab Target tab to keep.
+     * @return A new list containing only states that belong to the requested tab.
+     */
     @NonNull
     public static List<TicketState> filterStatesForTab(
             @NonNull List<TicketState> states,

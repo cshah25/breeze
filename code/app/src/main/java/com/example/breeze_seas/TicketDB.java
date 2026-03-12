@@ -7,12 +7,16 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,7 +36,13 @@ import java.util.Locale;
  */
 public final class TicketDB {
 
+    /**
+     * Listener notified when any of the ticket-tab lists are refreshed.
+     */
     public interface Listener {
+        /**
+         * Called after {@link TicketDB} publishes a new snapshot of ticket data.
+         */
         void onTicketsChanged();
     }
 
@@ -51,14 +61,27 @@ public final class TicketDB {
     @Nullable
     private String currentDeviceId;
 
+    /**
+     * Prevents external instantiation of the shared ticket data source.
+     */
     private TicketDB() {
     }
 
+    /**
+     * Returns the shared ticket data source used by the Tickets feature.
+     *
+     * @return Singleton {@link TicketDB} instance.
+     */
     @NonNull
     public static TicketDB getInstance() {
         return INSTANCE;
     }
 
+    /**
+     * Registers a listener for ticket-list refresh events.
+     *
+     * @param listener Listener to add if it is not already registered.
+     */
     public void addListener(@NonNull Listener listener) {
         synchronized (this) {
             if (!listeners.contains(listener)) {
@@ -67,12 +90,22 @@ public final class TicketDB {
         }
     }
 
+    /**
+     * Unregisters a listener that no longer needs ticket updates.
+     *
+     * @param listener Listener to remove.
+     */
     public void removeListener(@NonNull Listener listener) {
         synchronized (this) {
             listeners.remove(listener);
         }
     }
 
+    /**
+     * Reloads all ticket lists for the current device-scoped entrant.
+     *
+     * @param context Context used to resolve the Android device identifier.
+     */
     public void refreshTickets(@NonNull Context context) {
         String deviceId = getCurrentDeviceId(context.getApplicationContext());
         if (deviceId == null) {
@@ -88,6 +121,11 @@ public final class TicketDB {
         loadTicketsForDeviceId(deviceId);
     }
 
+    /**
+     * Returns a snapshot of the current Active tab ticket list.
+     *
+     * @return Copy of the active-ticket list.
+     */
     @NonNull
     public List<TicketUIModel> getActiveTickets() {
         synchronized (this) {
@@ -95,6 +133,11 @@ public final class TicketDB {
         }
     }
 
+    /**
+     * Returns a snapshot of the current Attending tab ticket list.
+     *
+     * @return Copy of the attending-ticket list.
+     */
     @NonNull
     public List<AttendingTicketUIModel> getAttendingTickets() {
         synchronized (this) {
@@ -102,6 +145,11 @@ public final class TicketDB {
         }
     }
 
+    /**
+     * Returns a snapshot of the current Past tab ticket list.
+     *
+     * @return Copy of the past-ticket list.
+     */
     @NonNull
     public List<PastEventUIModel> getPastTickets() {
         synchronized (this) {
@@ -109,14 +157,39 @@ public final class TicketDB {
         }
     }
 
+    /**
+     * Accepts an invited ticket and moves it into the attending state.
+     *
+     * @param ticket Invited ticket being accepted.
+     */
     public void acceptInvitation(@NonNull TicketUIModel ticket) {
         updateParticipantStatus(ticket.getEventId(), "accepted");
     }
 
+    /**
+     * Declines an invited ticket and moves it into the past-history state.
+     *
+     * @param ticket Invited ticket being declined.
+     */
     public void declineInvitation(@NonNull TicketUIModel ticket) {
         updateParticipantStatus(ticket.getEventId(), "declined");
     }
 
+    /**
+     * Removes the current entrant from an event's participant list.
+     *
+     * @param ticket Active ticket whose participant row should be deleted.
+     */
+    public void leaveWaitlist(@NonNull TicketUIModel ticket) {
+        deleteParticipant(ticket.getEventId());
+    }
+
+    /**
+     * Resolves the current device identifier used by the agreed participant schema.
+     *
+     * @param context Context used to access {@link Settings.Secure}.
+     * @return Device identifier for the current install, or {@code null} if unavailable.
+     */
     @Nullable
     private String getCurrentDeviceId(@NonNull Context context) {
         String androidId = Settings.Secure.getString(
@@ -131,57 +204,136 @@ public final class TicketDB {
         return androidId;
     }
 
+    /**
+     * Queries all participant rows associated with the provided device id.
+     *
+     * @param deviceId Device-scoped entrant identifier used by the participant schema.
+     */
     private void loadTicketsForDeviceId(@NonNull String deviceId) {
         db.collectionGroup(PARTICIPANTS_COLLECTION)
                 .whereEqualTo("deviceId", deviceId)
                 .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot == null || querySnapshot.isEmpty()) {
-                        replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-                        return;
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    /**
+                     * Starts resolving event details for the matching participant rows.
+                     *
+                     * @param querySnapshot Matching participant rows for the current device id.
+                     */
+                    @Override
+                    public void onSuccess(QuerySnapshot querySnapshot) {
+                        handleParticipantsLoaded(querySnapshot);
                     }
-
-                    List<Task<LoadedTicket>> ticketTasks = new ArrayList<>();
-                    for (QueryDocumentSnapshot waitingListEntry : querySnapshot) {
-                        ticketTasks.add(loadTicket(waitingListEntry));
-                    }
-
-                    Tasks.whenAllSuccess(ticketTasks)
-                            .addOnSuccessListener(results -> {
-                                List<TicketUIModel> nextActive = new ArrayList<>();
-                                List<AttendingTicketUIModel> nextAttending = new ArrayList<>();
-                                List<PastEventUIModel> nextPast = new ArrayList<>();
-
-                                for (Object result : results) {
-                                    LoadedTicket loadedTicket = (LoadedTicket) result;
-                                    if (loadedTicket == null) {
-                                        continue;
-                                    }
-
-                                    if (loadedTicket.activeTicket != null) {
-                                        nextActive.add(loadedTicket.activeTicket);
-                                    }
-                                    if (loadedTicket.attendingTicket != null) {
-                                        nextAttending.add(loadedTicket.attendingTicket);
-                                    }
-                                    if (loadedTicket.pastTicket != null) {
-                                        nextPast.add(loadedTicket.pastTicket);
-                                    }
-                                }
-
-                                replaceTickets(nextActive, nextAttending, nextPast);
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Failed to resolve event documents for tickets.", e);
-                                replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-                            });
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to load participant entries for current user.", e);
-                    replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+                .addOnFailureListener(new OnFailureListener() {
+                    /**
+                     * Clears the ticket lists if the participant query fails.
+                     *
+                     * @param e Query failure that prevented participant loading.
+                     */
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        handleParticipantLoadFailure(e);
+                    }
                 });
     }
 
+    /**
+     * Builds ticket-loading tasks for each participant row returned by Firestore.
+     *
+     * @param querySnapshot Matching participant rows for the current device id.
+     */
+    private void handleParticipantsLoaded(@Nullable QuerySnapshot querySnapshot) {
+        if (querySnapshot == null || querySnapshot.isEmpty()) {
+            replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            return;
+        }
+
+        List<Task<LoadedTicket>> ticketTasks = new ArrayList<>();
+        for (QueryDocumentSnapshot participantEntry : querySnapshot) {
+            ticketTasks.add(loadTicket(participantEntry));
+        }
+
+        Tasks.whenAllSuccess(ticketTasks)
+                .addOnSuccessListener(new OnSuccessListener<List<Object>>() {
+                    /**
+                     * Splits the resolved ticket results into Active, Attending, and Past lists.
+                     *
+                     * @param results Resolved ticket payloads returned from the event lookups.
+                     */
+                    @Override
+                    public void onSuccess(List<Object> results) {
+                        handleLoadedTicketResults(results);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    /**
+                     * Clears the ticket lists if the event lookups fail.
+                     *
+                     * @param e Failure that prevented event resolution for one or more tickets.
+                     */
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        handleLoadedTicketFailure(e);
+                    }
+                });
+    }
+
+    /**
+     * Clears the current lists when the initial participant query fails.
+     *
+     * @param e Failure that prevented participant loading.
+     */
+    private void handleParticipantLoadFailure(@NonNull Exception e) {
+        Log.e(TAG, "Failed to load participant entries for current user.", e);
+        replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+    }
+
+    /**
+     * Converts resolved ticket payloads into the three UI lists maintained by this data source.
+     *
+     * @param results Resolved ticket payloads returned from the event lookups.
+     */
+    private void handleLoadedTicketResults(@NonNull List<Object> results) {
+        List<TicketUIModel> nextActive = new ArrayList<>();
+        List<AttendingTicketUIModel> nextAttending = new ArrayList<>();
+        List<PastEventUIModel> nextPast = new ArrayList<>();
+
+        for (Object result : results) {
+            LoadedTicket loadedTicket = (LoadedTicket) result;
+            if (loadedTicket == null) {
+                continue;
+            }
+
+            if (loadedTicket.activeTicket != null) {
+                nextActive.add(loadedTicket.activeTicket);
+            }
+            if (loadedTicket.attendingTicket != null) {
+                nextAttending.add(loadedTicket.attendingTicket);
+            }
+            if (loadedTicket.pastTicket != null) {
+                nextPast.add(loadedTicket.pastTicket);
+            }
+        }
+
+        replaceTickets(nextActive, nextAttending, nextPast);
+    }
+
+    /**
+     * Clears the current lists if the event-resolution stage fails.
+     *
+     * @param e Failure that prevented event resolution for one or more tickets.
+     */
+    private void handleLoadedTicketFailure(@NonNull Exception e) {
+        Log.e(TAG, "Failed to resolve event documents for tickets.", e);
+        replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+    }
+
+    /**
+     * Loads the related event document and maps one participant row into a ticket UI model.
+     *
+     * @param participantEntry Participant row returned from the agreed schema.
+     * @return Task that resolves to a mapped ticket payload or {@code null} if it cannot be built.
+     */
     @NonNull
     private Task<LoadedTicket> loadTicket(@NonNull QueryDocumentSnapshot participantEntry) {
         String eventId = participantEntry.getString("eventId");
@@ -198,18 +350,57 @@ public final class TicketDB {
         String status = normalizeStatus(participantEntry.getString("status"));
         Timestamp joinedAt = participantEntry.getTimestamp("joinedAt");
 
-        return db.collection(EVENTS_COLLECTION).document(eventId).get().continueWith(task -> {
-            if (!task.isSuccessful()) {
-                if (task.getException() != null) {
-                    Log.e(TAG, "Failed to fetch event document for participant row " + participantEntry.getId(), task.getException());
-                }
-                return null;
-            }
-
-            return mapTicket(status, task.getResult(), joinedAt);
-        });
+        return db.collection(EVENTS_COLLECTION)
+                .document(eventId)
+                .get()
+                .continueWith(new Continuation<DocumentSnapshot, LoadedTicket>() {
+                    /**
+                     * Maps the fetched event document into the corresponding ticket UI payload.
+                     *
+                     * @param task Event-document lookup task for the participant row.
+                     * @return Resolved ticket payload, or {@code null} if mapping is not possible.
+                     */
+                    @Override
+                    public LoadedTicket then(@NonNull Task<DocumentSnapshot> task) {
+                        return continueLoadingTicket(task, participantEntry, status, joinedAt);
+                    }
+                });
     }
 
+    /**
+     * Continues ticket mapping after the related event document finishes loading.
+     *
+     * @param task Event-document lookup task for the participant row.
+     * @param participantEntry Participant row that requested the event lookup.
+     * @param status Normalized participant status.
+     * @param joinedAt Participant join timestamp used as a display fallback.
+     * @return Resolved ticket payload, or {@code null} if mapping is not possible.
+     */
+    @Nullable
+    private LoadedTicket continueLoadingTicket(
+            @NonNull Task<DocumentSnapshot> task,
+            @NonNull QueryDocumentSnapshot participantEntry,
+            @NonNull String status,
+            @Nullable Timestamp joinedAt
+    ) {
+        if (!task.isSuccessful()) {
+            if (task.getException() != null) {
+                Log.e(TAG, "Failed to fetch event document for participant row " + participantEntry.getId(), task.getException());
+            }
+            return null;
+        }
+
+        return mapTicket(status, task.getResult(), joinedAt);
+    }
+
+    /**
+     * Maps one participant row plus its event metadata into the correct ticket-tab payload.
+     *
+     * @param status Normalized participant status from Firestore.
+     * @param eventDocument Event document used to build display fields.
+     * @param joinedAt Participant join timestamp used as a display fallback.
+     * @return Ticket payload for one of the three tabs, or {@code null} if the row should be ignored.
+     */
     @Nullable
     private LoadedTicket mapTicket(
             @NonNull String status,
@@ -280,6 +471,13 @@ public final class TicketDB {
         return null;
     }
 
+    /**
+     * Builds the date label shown on ticket cards using the strongest available event timestamp.
+     *
+     * @param eventDocument Event document used to source display timestamps.
+     * @param joinedAt Participant join timestamp used as the last fallback.
+     * @return Human-readable date label for the ticket card.
+     */
     @NonNull
     private String buildDateLabel(@NonNull DocumentSnapshot eventDocument, @Nullable Timestamp joinedAt) {
         Timestamp displayTimestamp = eventDocument.getTimestamp("eventStart");
@@ -304,6 +502,12 @@ public final class TicketDB {
         return new SimpleDateFormat("EEE, MMM d • h:mm a", Locale.US).format(displayDate);
     }
 
+    /**
+     * Normalizes Firestore participant status values for predictable comparisons.
+     *
+     * @param status Raw participant status from Firestore.
+     * @return Lower-cased trimmed status string, or an empty string if input is {@code null}.
+     */
     @NonNull
     private String normalizeStatus(@Nullable String status) {
         if (status == null) {
@@ -312,6 +516,13 @@ public final class TicketDB {
         return status.trim().toLowerCase(Locale.US);
     }
 
+    /**
+     * Returns a fallback display value when Firestore data is missing or blank.
+     *
+     * @param value Candidate value from Firestore.
+     * @param fallbackValue Default display value to use if the candidate is empty.
+     * @return Trimmed Firestore value, or the provided fallback.
+     */
     @NonNull
     private String fallback(@Nullable String value, @NonNull String fallbackValue) {
         if (value == null || value.trim().isEmpty()) {
@@ -320,6 +531,12 @@ public final class TicketDB {
         return value.trim();
     }
 
+    /**
+     * Converts archived participant statuses into short chip labels for the Past tab.
+     *
+     * @param status Normalized participant status.
+     * @return Short status label shown in the history chip.
+     */
     @NonNull
     private String formatPastStatus(@NonNull String status) {
         if ("declined".equals(status)) {
@@ -334,6 +551,12 @@ public final class TicketDB {
         return "Past";
     }
 
+    /**
+     * Converts archived participant statuses into supporting copy for the Past tab.
+     *
+     * @param status Normalized participant status.
+     * @return Supporting detail text for the archived ticket card.
+     */
     @NonNull
     private String formatPastDetail(@NonNull String status) {
         if ("declined".equals(status)) {
@@ -348,6 +571,12 @@ public final class TicketDB {
         return "This ticket is no longer active.";
     }
 
+    /**
+     * Updates the participant status for the current device and refreshes ticket lists afterward.
+     *
+     * @param eventId Event whose participant row should be updated.
+     * @param nextStatus Next participant status to write to Firestore.
+     */
     private void updateParticipantStatus(@NonNull String eventId, @NonNull String nextStatus) {
         String deviceId;
 
@@ -365,10 +594,83 @@ public final class TicketDB {
                 .collection(PARTICIPANTS_COLLECTION)
                 .document(deviceId)
                 .update("status", nextStatus)
-                .addOnSuccessListener(unused -> loadTicketsForDeviceId(deviceId))
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to update participant status to " + nextStatus, e));
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    /**
+                     * Reloads the ticket lists after a successful participant-status update.
+                     *
+                     * @param unused Unused success payload from the Firestore update task.
+                     */
+                    @Override
+                    public void onSuccess(Void unused) {
+                        loadTicketsForDeviceId(deviceId);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    /**
+                     * Logs a participant-status update failure without changing the cached lists.
+                     *
+                     * @param e Firestore failure returned by the update task.
+                     */
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Failed to update participant status to " + nextStatus, e);
+                    }
+                });
     }
 
+    /**
+     * Deletes the participant row for the current device from the provided event.
+     *
+     * @param eventId Event whose participant row should be removed.
+     */
+    private void deleteParticipant(@NonNull String eventId) {
+        String deviceId;
+
+        synchronized (this) {
+            deviceId = currentDeviceId;
+        }
+
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            Log.w(TAG, "Cannot delete participant row without a current device id.");
+            return;
+        }
+
+        db.collection(EVENTS_COLLECTION)
+                .document(eventId)
+                .collection(PARTICIPANTS_COLLECTION)
+                .document(deviceId)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    /**
+                     * Reloads the ticket lists after a successful waitlist-leave action.
+                     *
+                     * @param unused Unused success payload from the Firestore delete task.
+                     */
+                    @Override
+                    public void onSuccess(Void unused) {
+                        loadTicketsForDeviceId(deviceId);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    /**
+                     * Logs a waitlist-leave failure without changing the cached lists.
+                     *
+                     * @param e Firestore failure returned by the delete task.
+                     */
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Failed to remove participant row for event " + eventId, e);
+                    }
+                });
+    }
+
+    /**
+     * Replaces the cached tab lists and broadcasts the refresh to listeners.
+     *
+     * @param nextActive New Active tab list.
+     * @param nextAttending New Attending tab list.
+     * @param nextPast New Past tab list.
+     */
     private void replaceTickets(
             @NonNull List<TicketUIModel> nextActive,
             @NonNull List<AttendingTicketUIModel> nextAttending,
@@ -388,6 +690,9 @@ public final class TicketDB {
         notifyListeners();
     }
 
+    /**
+     * Notifies all registered listeners that the cached ticket lists have changed.
+     */
     private void notifyListeners() {
         List<Listener> snapshot;
 
@@ -400,11 +705,21 @@ public final class TicketDB {
         }
     }
 
+    /**
+     * Holder for a single mapped ticket payload targeted at exactly one ticket tab.
+     */
     private static final class LoadedTicket {
         private final TicketUIModel activeTicket;
         private final AttendingTicketUIModel attendingTicket;
         private final PastEventUIModel pastTicket;
 
+        /**
+         * Creates a tab-specific ticket payload wrapper.
+         *
+         * @param activeTicket Active-tab payload, or {@code null} when not applicable.
+         * @param attendingTicket Attending-tab payload, or {@code null} when not applicable.
+         * @param pastTicket Past-tab payload, or {@code null} when not applicable.
+         */
         private LoadedTicket(
                 @Nullable TicketUIModel activeTicket,
                 @Nullable AttendingTicketUIModel attendingTicket,
@@ -415,16 +730,34 @@ public final class TicketDB {
             this.pastTicket = pastTicket;
         }
 
+        /**
+         * Creates a wrapper containing an Active-tab payload.
+         *
+         * @param ticket Active-tab ticket payload.
+         * @return Wrapper containing only the active-ticket payload.
+         */
         @NonNull
         private static LoadedTicket forActive(@NonNull TicketUIModel ticket) {
             return new LoadedTicket(ticket, null, null);
         }
 
+        /**
+         * Creates a wrapper containing an Attending-tab payload.
+         *
+         * @param ticket Attending-tab ticket payload.
+         * @return Wrapper containing only the attending-ticket payload.
+         */
         @NonNull
         private static LoadedTicket forAttending(@NonNull AttendingTicketUIModel ticket) {
             return new LoadedTicket(null, ticket, null);
         }
 
+        /**
+         * Creates a wrapper containing a Past-tab payload.
+         *
+         * @param ticket Past-tab ticket payload.
+         * @return Wrapper containing only the past-ticket payload.
+         */
         @NonNull
         private static LoadedTicket forPast(@NonNull PastEventUIModel ticket) {
             return new LoadedTicket(null, null, ticket);

@@ -12,6 +12,9 @@ package com.example.breeze_seas;
  */
 public class TicketUIModel {
 
+    /**
+     * Presentation states used by the Active Tickets UI.
+     */
     public enum Status {
         PENDING,        // WAITING
         BACKUP,         // Not selected (backup pool)
@@ -23,6 +26,14 @@ public class TicketUIModel {
     private final String dateLabel;
     private final Status status;
 
+    /**
+     * Creates a presentation model for one active ticket card.
+     *
+     * @param eventId Firestore event identifier for the related event.
+     * @param title Event title shown on the card.
+     * @param dateLabel Human-readable date string shown on the card.
+     * @param status Active-ticket state that drives the chip and click behavior.
+     */
     public TicketUIModel(String eventId, String title, String dateLabel, Status status) {
         this.eventId = eventId;
         this.title = title;

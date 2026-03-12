@@ -37,7 +37,7 @@
     <string name="organizer_event_preview_loading">Loading event…</string>
     <string name="organizer_event_preview_error">Event preview unavailable</string>
     <string name="organizer_event_preview_not_found">Event not found</string>
-    <string name="organizer_event_preview_subtitle_text">Review this event before managing entrants or sending updates.</string>
+    <string name="organizer_event_preview_subtitle_text">Update your event details here, then move into entrant management or announcements.</string>
     <string name="organizer_event_preview_registration_label">Registration Window</string>
     <string name="organizer_event_preview_registration_window">%1$s to %2$s</string>
     <string name="organizer_event_preview_waiting_unlimited">Waiting list: Unlimited</string>
@@ -52,6 +52,12 @@
     <string name="organizer_event_preview_announcement_unavailable">Send Announcement coming soon.</string>
     <string name="organizer_event_preview_poster">Event poster preview</string>
     <string name="organizer_event_preview_not_set">Not set</string>
+    <string name="organizer_event_preview_update_poster">Update Poster</string>
+    <string name="organizer_event_preview_save_button">Save Changes</string>
+    <string name="organizer_event_preview_delete_button">Delete Event</string>
+    <string name="organizer_event_preview_delete_title">Delete event?</string>
+    <string name="organizer_event_preview_delete_message">This will remove the event from the organizer list.</string>
+    <string name="organizer_event_preview_delete_confirm">Delete</string>
     <string name="organize_title">Organize</string>
     <string name="organize_subtitle">Create events, manage entrants, and keep your organizer flow in one place.</string>
     <string name="organize_create_event">Create Event</string>
