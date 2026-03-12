@@ -26,23 +26,49 @@ import java.util.List;
 public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdapter.TicketViewHolder> {
     // The following adapter implementation was generated with assistance from ChatGPT,
     // "How to implement a RecyclerView Adapter in Android using java", 2026-03-03.
+
+    /**
+     * Listener for taps on active-ticket cards.
+     */
     public interface OnTicketClickListener {
+        /**
+         * Handles a tap on an active ticket card.
+         *
+         * @param ticket The active ticket that was tapped.
+         */
         void onTicketClick(TicketUIModel ticket);
     }
 
     private final List<TicketUIModel> items = new ArrayList<>();
     private final OnTicketClickListener listener;
 
+    /**
+     * Creates the adapter used by the Active Tickets list.
+     *
+     * @param listener Listener invoked when the user taps a ticket card.
+     */
     public ActiveTicketsAdapter(OnTicketClickListener listener) {
         this.listener = listener;
     }
 
+    /**
+     * Replaces the current active-ticket list contents.
+     *
+     * @param newItems New active tickets to render.
+     */
     public void submitList(List<TicketUIModel> newItems) {
         items.clear();
         items.addAll(newItems);
         notifyDataSetChanged();
     }
 
+    /**
+     * Inflates a single active-ticket card view holder.
+     *
+     * @param parent Parent view group that will host the card.
+     * @param viewType Adapter view type value.
+     * @return A new active-ticket view holder.
+     */
     @NonNull
     @Override
     public TicketViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -51,6 +77,12 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
         return new TicketViewHolder(v);
     }
 
+    /**
+     * Binds the active-ticket card at the requested position.
+     *
+     * @param holder View holder receiving the ticket data.
+     * @param position Zero-based adapter position being bound.
+     */
     @Override
     public void onBindViewHolder(@NonNull TicketViewHolder holder, int position) {
         TicketUIModel ticket = items.get(position);
@@ -99,16 +131,34 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
 
         holder.footer.setTextColor(secondary);
 
-        holder.itemView.setOnClickListener(v -> {
-            if (listener != null) listener.onTicketClick(ticket);
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            /**
+             * Dispatches the tapped active ticket back to the fragment layer.
+             *
+             * @param v The ticket card view that was pressed.
+             */
+            @Override
+            public void onClick(View v) {
+                if (listener != null) {
+                    listener.onTicketClick(ticket);
+                }
+            }
         });
     }
 
+    /**
+     * Returns the number of active-ticket cards currently being rendered.
+     *
+     * @return The active-ticket item count.
+     */
     @Override
     public int getItemCount() {
         return items.size();
     }
 
+    /**
+     * View holder for a single active-ticket card.
+     */
     static class TicketViewHolder extends RecyclerView.ViewHolder {
         ImageView icon;
         TextView title;
@@ -118,6 +168,11 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
         TextView chip;
         View actionDot;
 
+        /**
+         * Binds the child views used to render one active-ticket card.
+         *
+         * @param itemView Inflated card view backing this holder.
+         */
         TicketViewHolder(@NonNull View itemView) {
             super(itemView);
             icon = itemView.findViewById(R.id.ticket_thumbnail);

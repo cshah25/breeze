@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
+
 /**
  * TicketsFragment is the top-level Tickets destination displayed in bottom navigation.
  *
@@ -25,6 +26,14 @@ public class TicketsFragment extends Fragment {
     private ViewPager2.OnPageChangeCallback pageChangeCallback;
     private int selectedTabIndex;
 
+    /**
+     * Inflates the Tickets shell, binds the segmented tab controls, and attaches the pager.
+     *
+     * @param inflater Layout inflater used to build the fragment view.
+     * @param container Optional parent that will host the inflated hierarchy.
+     * @param savedInstanceState Saved state containing the previously selected tab, if any.
+     * @return The inflated Tickets root view.
+     */
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater,
@@ -45,10 +54,25 @@ public class TicketsFragment extends Fragment {
 
         for (int i = 0; i < tabButtons.length; i++) {
             final int tabIndex = i;
-            tabButtons[i].setOnClickListener(v -> selectTab(tabIndex, true));
+            tabButtons[i].setOnClickListener(new View.OnClickListener() {
+                /**
+                 * Switches the pager to the tapped ticket tab.
+                 *
+                 * @param v The tab button that was pressed.
+                 */
+                @Override
+                public void onClick(View v) {
+                    selectTab(tabIndex, true);
+                }
+            });
         }
 
         pageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+            /**
+             * Syncs the custom tab controls when the pager changes pages.
+             *
+             * @param position The pager position that is now selected.
+             */
             @Override
             public void onPageSelected(int position) {
                 updateTabSelection(position);
@@ -64,12 +88,20 @@ public class TicketsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Stores the currently selected tab so the custom segmented control restores correctly.
+     *
+     * @param outState Bundle that receives the selected tab index.
+     */
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(STATE_SELECTED_TAB, selectedTabIndex);
     }
 
+    /**
+     * Releases pager references and callbacks tied to the fragment view hierarchy.
+     */
     @Override
     public void onDestroyView() {
         if (viewPager != null && pageChangeCallback != null) {
@@ -87,6 +119,12 @@ public class TicketsFragment extends Fragment {
         super.onDestroyView();
     }
 
+    /**
+     * Selects a tab, updates the segmented control state, and optionally animates the pager move.
+     *
+     * @param index The zero-based tab index to select.
+     * @param smoothScroll {@code true} to animate the pager move; {@code false} to jump directly.
+     */
     private void selectTab(int index, boolean smoothScroll) {
         if (viewPager == null) {
             return;
@@ -100,6 +138,11 @@ public class TicketsFragment extends Fragment {
         }
     }
 
+    /**
+     * Updates the activated state of the custom segmented control buttons.
+     *
+     * @param selectedIndex The zero-based tab index that should appear selected.
+     */
     private void updateTabSelection(int selectedIndex) {
         selectedTabIndex = selectedIndex;
 
@@ -114,12 +157,26 @@ public class TicketsFragment extends Fragment {
         }
     }
 
+    /**
+     * Pager adapter that supplies the three Tickets child fragments.
+     */
     private static class TicketsPagerAdapter extends FragmentStateAdapter {
 
+        /**
+         * Creates a pager adapter scoped to the parent Tickets fragment.
+         *
+         * @param fragment The parent fragment that owns the pager lifecycle.
+         */
         public TicketsPagerAdapter(@NonNull Fragment fragment) {
             super(fragment);
         }
 
+        /**
+         * Creates the fragment for the requested ticket tab position.
+         *
+         * @param position The zero-based pager position.
+         * @return The fragment that should render the requested tab.
+         */
         @NonNull
         @Override
         public Fragment createFragment(int position) {
@@ -128,6 +185,11 @@ public class TicketsFragment extends Fragment {
             return new PastTicketsFragment();
         }
 
+        /**
+         * Returns the number of fixed ticket tabs.
+         *
+         * @return Always {@code 3} for Active, Attending, and Past.
+         */
         @Override
         public int getItemCount() {
             return 3;

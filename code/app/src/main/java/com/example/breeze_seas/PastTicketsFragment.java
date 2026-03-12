@@ -30,10 +30,26 @@ import com.google.android.material.snackbar.Snackbar;
 public class PastTicketsFragment extends Fragment {
 
     private final TicketDB ticketDb = TicketDB.getInstance();
-    private final TicketDB.Listener ticketsListener = this::renderTickets;
+    private final TicketDB.Listener ticketsListener = new TicketDB.Listener() {
+        /**
+         * Refreshes the past-ticket list when {@link TicketDB} publishes new data.
+         */
+        @Override
+        public void onTicketsChanged() {
+            renderTickets();
+        }
+    };
 
     private PastTicketsAdapter adapter;
 
+    /**
+     * Inflates the Past tab, binds its list, and starts listening for archived ticket updates.
+     *
+     * @param inflater Layout inflater used to build the fragment view.
+     * @param container Optional parent that will host the inflated hierarchy.
+     * @param savedInstanceState Saved state bundle, if the fragment is being recreated.
+     * @return The inflated Past Tickets view.
+     */
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater,
@@ -45,9 +61,17 @@ public class PastTicketsFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.past_tickets_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        adapter = new PastTicketsAdapter(event ->
-                Snackbar.make(view, "Past event details are not available yet.", Snackbar.LENGTH_SHORT).show()
-        );
+        adapter = new PastTicketsAdapter(new PastTicketsAdapter.OnPastEventClickListener() {
+            /**
+             * Shows the current placeholder response for past-ticket taps.
+             *
+             * @param event The archived event card the entrant tapped.
+             */
+            @Override
+            public void onPastEventClick(@NonNull PastEventUIModel event) {
+                Snackbar.make(view, "Past event details are not available yet.", Snackbar.LENGTH_SHORT).show();
+            }
+        });
 
         recyclerView.setAdapter(adapter);
 
@@ -58,6 +82,9 @@ public class PastTicketsFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Removes ticket listeners tied to the destroyed past-history view hierarchy.
+     */
     @Override
     public void onDestroyView() {
         ticketDb.removeListener(ticketsListener);
@@ -65,6 +92,9 @@ public class PastTicketsFragment extends Fragment {
         super.onDestroyView();
     }
 
+    /**
+     * Rebinds the current past-ticket list into the adapter.
+     */
     private void renderTickets() {
         if (adapter == null) {
             return;
