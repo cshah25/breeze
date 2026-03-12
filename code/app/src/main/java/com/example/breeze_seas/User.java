@@ -18,6 +18,7 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
+    /* This class stores the details of a user.*/
     public User() {
 
         this.deviceId = null;
@@ -140,6 +141,9 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    /* Builds a full name string for the user by combining
+    * the first name and last name.
+    * */
     private String buildFullName() {
         String firstName = getFirstName() == null ? "" : getFirstName().trim();
         String lastName = getLastName() == null ? "" : getLastName().trim();
