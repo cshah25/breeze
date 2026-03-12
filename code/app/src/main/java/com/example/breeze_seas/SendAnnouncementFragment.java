@@ -27,7 +27,6 @@ public class SendAnnouncementFragment extends Fragment {
     private TabLayout tabLayout;
     private TextInputLayout notificationTextBox;
     private MaterialButton sendButton;
-
     private NotificationService notificationService = new NotificationService();
 
 
@@ -52,41 +51,31 @@ public class SendAnnouncementFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        SessionViewModel viewModel;
-        viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
-        String deviceId = viewModel.getAndroidID().getValue();
-
-            if (deviceId != null) {
-                Log.d("BreezeSeas", "Observed ID: " + deviceId);
-
-            }
-
-
         sendButton.setOnClickListener(v -> {
+            SessionViewModel viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
 
-            String content = notificationTextBox.getEditText().getText().toString();
-            String userId = deviceId; // TODO: this should get the userIds for all the users belonging to the respective list.
-            Notification notification;
-            NotificationType type = ANNOUNCEMENT_WAITLIST;
+            viewModel.getEventShown().observe(getViewLifecycleOwner(), eventShown -> {
+                if (eventShown != null) {
+                    String content = notificationTextBox.getEditText().getText().toString();
+                    String userId = "a35fff58c4cd24e1";
+                    String eventId = eventShown.getId();
+                    String eventName = eventShown.getName();
+                    NotificationType type = ANNOUNCEMENT_WAITLIST;
+                    int selectedTabPosition = tabLayout.getSelectedTabPosition();
+                    if (selectedTabPosition == 0) {
+                        type = ANNOUNCEMENT_WAITLIST;
+                    } else if (selectedTabPosition == 1) {
+                        type = ANNOUNCEMENT_SELECTED;
+                    } else if (selectedTabPosition == 2) {
+                        type = ANNOUNCEMENT_CANCELLED;
+                    }
 
-            // Check lists of users the notification will be sent to
-            int selectedTabPosition = tabLayout.getSelectedTabPosition();
-            if (selectedTabPosition == 0) {
-                type = ANNOUNCEMENT_WAITLIST;
-            } else if (selectedTabPosition == 1) {
-                type = ANNOUNCEMENT_SELECTED;
-            } else if (selectedTabPosition == 2) {
-                type = ANNOUNCEMENT_CANCELLED;
-            }
+                    Notification notification = new Notification(type, content, eventId, eventName, userId);
+                    notificationService.sendNotification(notification);
 
-            String eventId = "hello bryant";
-            String eventName = "hello world";
-
-            notification = new Notification(type, content, eventId, eventName,userId);
-            notificationService.sendNotification(notification);
-            // TODO: Get eventId and eventName from organizer event details
-            Toast.makeText(getContext(), "Announcement Sent!(TODO)",
-                    Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Announcement Sent!", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 }
