@@ -2,7 +2,7 @@ package com.example.breeze_seas;
 
 import com.google.firebase.Timestamp;
 
-/*
+/**
 * Primary model for all the users of the app.
  */
 public class User {
@@ -18,7 +18,9 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
-    /* This class stores the details of a user.*/
+    /**
+     *  This class stores the details of a user.
+     */
     public User() {
 
         this.deviceId = null;
@@ -141,7 +143,7 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    /* Builds a full name string for the user by combining
+    /** Builds a full name string for the user by combining
     * the first name and last name.
     * */
     private String buildFullName() {
