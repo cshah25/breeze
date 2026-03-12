@@ -79,20 +79,16 @@ public class NotificationFragment extends Fragment {
                             new NotificationService.OnNotificationLoadedListener(){
 
                                 public void onNotificationLoaded(List<Notification> fetchedNotifications) {
-                                    Log.d("ALARMMM", "get notification got here");
-                                    notifications = fetchedNotifications;
-                                    if (notifications.isEmpty()) {
-                                        notificationsRecycler.setVisibility(GONE);
-                                        emptyStateLayout.setVisibility(VISIBLE);
-                                    }
-                                    else {
-                                        Log.d("ALARMMM", "tomato pasta");
-                                        notifications.clear();
-                                        notifications.addAll(fetchedNotifications);
-
+                                    notifications.addAll(fetchedNotifications);
+                                    if (!notifications.isEmpty()) {
                                         notificationsRecycler.setVisibility(View.VISIBLE);
                                         emptyStateLayout.setVisibility(View.GONE);
                                         adapter.notifyDataSetChanged();
+
+                                    }
+                                    else {
+                                        notificationsRecycler.setVisibility(GONE);
+                                        emptyStateLayout.setVisibility(VISIBLE);
                                     }
                                 }
                                 @Override

@@ -41,10 +41,13 @@ public class NotificationEntryAdapter extends RecyclerView.Adapter<NotificationE
         holder.messageText.setText(notification.getDisplayMessage());
 
         // Format and set the time
-        String timeString = notification.getSentAt().toString();
-        long timestamp = Long.parseLong(timeString);
-        timeString = formatTimestamp(timestamp);
-        holder.timeText.setText(timeString);
+        if (notification.getSentAt() != null) {
+            // Convert Firestore Timestamp to milliseconds (long)
+            long timestampMillis = notification.getSentAt().toDate().getTime();
+
+            String timeString = formatTimestamp(timestampMillis);
+            holder.timeText.setText(timeString);
+        }
 
     }
 

@@ -65,7 +65,7 @@ public class SendAnnouncementFragment extends Fragment {
         sendButton.setOnClickListener(v -> {
 
             String content = notificationTextBox.getEditText().getText().toString();
-            String userId = deviceId;
+            String userId = deviceId; // TODO: this should get the userIds for all the users belonging to the respective list.
             Notification notification;
             NotificationType type = ANNOUNCEMENT_WAITLIST;
 
