@@ -43,30 +43,21 @@ public class OrganizerEventPreviewFragment extends Fragment {
     private void loadEvent(@NonNull View view, @NonNull String eventId) {
         TextView title = view.findViewById(R.id.organizer_event_preview_title);
         title.setText(R.string.organizer_event_preview_loading);
-
         EventDB.getEventById(eventId, new EventDB.LoadSingleEventCallback() {
             @Override
             public void onSuccess(Event event) {
-                if (!isAdded()) {
-                    return;
-                }
-
+                if (!isAdded()) return;
                 if (event == null) {
                     title.setText(R.string.organizer_event_preview_not_found);
                     return;
                 }
-
                 bindEvent(view, event);
             }
-
             @Override
             public void onFailure(Exception e) {
-                if (!isAdded()) {
-                    return;
-                }
-
+                if (!isAdded()) return;
                 title.setText(R.string.organizer_event_preview_error);
-                Toast.makeText(requireContext(), "Failed to load event preview", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -130,6 +130,20 @@ public class EventDB {
                 .addOnFailureListener(callback::onFailure);
     }
 
+    public static void getEventById(String eventId,LoadSingleEventCallback callback){
+        setup();
+        eventRef.document(eventId).get().
+                addOnSuccessListener(documentSnapshot ->{
+                    if(documentSnapshot.exists()){
+                        callback.onSuccess(EventDB.fromDocument(documentSnapshot));
+                    }
+                    else{
+                        callback.onSuccess(null);
+                    }
+                } ).addOnFailureListener(callback::onFailure);
+
+    }
+
 
 
 
