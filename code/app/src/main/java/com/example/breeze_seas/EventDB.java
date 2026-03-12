@@ -56,6 +56,7 @@ public class EventDB {
     }
 
     public static String genNewEventId() {
+        setup();
         return eventRef.document().getId();
     }
 
@@ -85,18 +86,22 @@ public class EventDB {
         // Add event details
         // TODO: After adding event collection, need to add participants
         eventRef
-                .add(map)
-                .addOnSuccessListener(docRef -> {
-
+                .document(event.getEventId())
+                .set(map)
+                .addOnSuccessListener(unused -> {
+                    // Add
+                    callback.onSuccess(event.getEventId());
                 })
                 .addOnFailureListener(callback::onFailure);
 
+
+    }
+    private static void addParticipants(Event event) {
         // Mange all list classes
         WaitingList waitingList = event.getWaitingList();
         PendingList pendingList = event.getPendingList();
         AcceptedList acceptedList = event.getAcceptedList();
         DeclinedList declinedList = event.getDeclinedList();
-
 
     }
 
@@ -145,30 +150,5 @@ public class EventDB {
 //                .addOnSuccessListener(doc -> callback.onSuccess(Event.fromDocument(doc)))
 //                .addOnFailureListener(callback::onFailure);
     }
-
-
-
-//    public static Event fromDocument(DocumentSnapshot doc) {
-//        if (doc == null || !doc.exists()) return null;
-//
-//        String name = doc.getString("name");
-//        String details = doc.getString("details");
-//        String posterUriString = doc.getString("posterUriString");
-//
-//        Long regFrom = doc.getLong("regFromMillis");
-//        Long regTo = doc.getLong("regToMillis");
-//        Long capLong = doc.getLong("waitingListCap");
-//        Boolean geo = doc.getBoolean("geoRequired");
-//
-//        return new Event(
-//                doc.getId(),
-//                name == null ? "" : name,
-//                details == null ? "" : details,
-//                posterUriString,
-//                regFrom == null ? 0L : regFrom,
-//                regTo == null ? 0L : regTo,
-//                capLong == null ? null : capLong.intValue(),
-//                geo != null && geo
-//        );
 
 }

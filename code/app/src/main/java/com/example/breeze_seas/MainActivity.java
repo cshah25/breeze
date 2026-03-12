@@ -116,9 +116,18 @@ public class MainActivity extends AppCompatActivity {
 
 
         // TESTING
-        Event e = new Event(user.getDeviceId(), 50);
+        Event e = new Event("omg", 50);
         e.setName("Bryant is not well");
-        EventDB.addEvent(e);
+        EventDB.addEvent(e, new EventDB.AddEventCallback() {
+            @Override
+            public void onSuccess(String eventId) {
+
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+            }
+        });
         return;
 
 
