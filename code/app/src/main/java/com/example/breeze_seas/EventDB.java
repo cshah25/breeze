@@ -4,6 +4,7 @@ import android.util.Log;
 
 
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -115,20 +116,18 @@ public class EventDB {
 
         // TODO: Fetch all events
         // TODO: For each event, grab event details, and reconstruct the the list classes from the participants sub-collection
-//        eventRef
-//                .orderBy("regFromMillis")
-//                .get()
-//                .addOnSuccessListener(queryDocumentSnapshots -> {
-//                    List<Event> events = new ArrayList<>();
-//                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-//                        Event event = Event.fromDocument(doc);
-//                        if (event != null) {
-//                            events.add(event);
-//                        }
-//                    }
-//                    callback.onSuccess(events);
-//                })
-//                .addOnFailureListener(callback::onFailure);
+        eventRef.orderBy("registrationStartDate").get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    ArrayList<Event> events = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Event event = EventDB.fromDocument(doc);
+                        if (event != null) {
+                            events.add(event);
+                        }
+                    }
+                    callback.onSuccess(events);
+                })
+                .addOnFailureListener(callback::onFailure);
     }
 
 
@@ -139,16 +138,48 @@ public class EventDB {
         void onSuccess(Event event);
         void onFailure(Exception e);
     }
-    public static void getEventById(String eventId, LoadSingleEventCallback callback) {
-        setup();
 
-        // TODO: Return event object by ID
-        // TODO: Reconstruct list classes from the participants sub-collection;
-//        eventRef
-//                .document(eventId)
-//                .get()
-//                .addOnSuccessListener(doc -> callback.onSuccess(Event.fromDocument(doc)))
-//                .addOnFailureListener(callback::onFailure);
+    public static Event fromDocument(DocumentSnapshot doc) {
+        if (doc == null || !doc.exists()) return null;
+
+        //Strings
+        String eventId = doc.getId();
+        String organizerId = doc.getString("organizerId");
+        String name = doc.getString("name");
+        String description = doc.getString("description")!=null ? doc.getString("description") : "";
+        String image = doc.getString("image") != null ? doc.getString("image") : "";
+        String qrValue = doc.getString("qrValue") != null ? doc.getString("qrValue") : "";
+
+        boolean geo = Boolean.TRUE.equals(doc.getBoolean("geolocationEnforced")); // false if null
+
+        //timestamps
+        Timestamp dateCreated = doc.getTimestamp("dateCreated");
+        Timestamp dateModified = doc.getTimestamp("dateModified");
+        Timestamp regStart = doc.getTimestamp("registrationStartDate");
+        Timestamp regEnd = doc.getTimestamp("registrationEndDate");
+        Timestamp eventStart = doc.getTimestamp("eventStartDate");
+        Timestamp eventEnd = doc.getTimestamp("eventEndDate");
+
+
+        //int vals
+        int eventCap = doc.getLong("eventCapacity").intValue();
+        int waitCap = doc.getLong("waitingListCapacity") != null ? doc.getLong("waitingListCapacity").intValue() : -1;
+        int drawRound = doc.getLong("drawARound") != null ? doc.getLong("drawARound").intValue() : 0;
+
+
+        Event newEvent = new Event(
+                eventId, organizerId, name, description, image, qrValue,
+                dateCreated, dateModified, regStart, regEnd, eventStart, eventEnd,
+                geo, eventCap, waitCap, drawRound,
+                null, null, null, null
+        );
+
+        newEvent.setWaitingList(new WaitingList(newEvent, waitCap));
+        newEvent.setPendingList(new PendingList(newEvent, eventCap));
+        newEvent.setAcceptedList(new AcceptedList(newEvent, eventCap));
+        newEvent.setDeclinedList(new DeclinedList(newEvent, -1));
+
+        return newEvent;
     }
 
 }
