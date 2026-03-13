@@ -387,7 +387,7 @@ public class OrganizerEventPreviewFragment extends Fragment {
         }
 
         try {
-            Class<?> fragmentClass = Class.forName("com.example.breeze_seas.ManageEntrantsFragment");
+            Class<?> fragmentClass = Class.forName("com.example.breeze_seas.WaitingListFragment");
             Object instance = fragmentClass.getDeclaredConstructor().newInstance();
             if (!(instance instanceof Fragment)) {
                 throw new IllegalStateException("ManageEntrantsFragment is not a Fragment");
