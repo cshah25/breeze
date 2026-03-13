@@ -15,7 +15,6 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /*** ExploreFragment is a top-level destination accessible via Bottom Navigation.
  *
@@ -27,8 +26,9 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     private TextView noEventsTest;
     private View scanQRCodeBtn;
     private EventDB eventDBInstance;
-    private List<Event> eventList;
+    private ArrayList<Event> eventList;
     private SessionViewModel viewModel;
+    private User user;
 
     public ExploreFragment() {
         super(R.layout.fragment_explore);
@@ -58,6 +58,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
         // Setup viewModel
         viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
+        user = viewModel.getUser().getValue();
 
     }
 
@@ -87,9 +88,16 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         });
     }
 
-    private void loadEvents(View view, List<Event> events) {
-        eventList = events;
-        showNoEventsText(events == null || events.isEmpty());
+    private void loadEvents(View view, ArrayList<Event> events) {
+        // filter for events not owned by you
+        ArrayList<Event> tmp = new ArrayList<>();
+        for (Event e : events) {
+            if (!e.getOrganizerId().equals(user.getDeviceId())) {
+                tmp.add(e);
+            }
+        }
+        eventList = tmp;
+        showNoEventsText(eventList == null || eventList.isEmpty());
 
         RecyclerView eventsView = view.findViewById(R.id.explore_recycler_view_events);
         // Initiate adapter

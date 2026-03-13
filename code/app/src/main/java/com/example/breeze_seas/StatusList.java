@@ -153,6 +153,15 @@ public abstract class StatusList {
         return userList;
     }
 
+    public boolean userIsInList(User user) {
+        // loop check
+        for (User tmp : userList) {
+            if (tmp.getDeviceId().equals(user.getDeviceId())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public int getSize(){
         return userList.size();

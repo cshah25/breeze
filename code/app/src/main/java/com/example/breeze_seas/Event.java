@@ -629,4 +629,52 @@ public class Event {
         return timestamp == null ? 0L : timestamp.toDate().getTime();
     }
 
+    /**
+     * Resyncs the list objects with information from the db
+     */
+    public void refreshListsFromDB() {
+        waitingList.refresh(new StatusList.ListUpdateListener() {
+            @Override
+            public void onUpdate() {
+            }
+
+            @Override
+            public void onError(Exception e) {
+            }
+        });
+        pendingList.refresh(new StatusList.ListUpdateListener() {
+            @Override
+            public void onUpdate() {
+
+            }
+
+            @Override
+            public void onError(Exception e) {
+
+            }
+        });
+        acceptedList.refresh(new StatusList.ListUpdateListener() {
+            @Override
+            public void onUpdate() {
+
+            }
+
+            @Override
+            public void onError(Exception e) {
+
+            }
+        });
+        declinedList.refresh(new StatusList.ListUpdateListener() {
+            @Override
+            public void onUpdate() {
+
+            }
+
+            @Override
+            public void onError(Exception e) {
+
+            }
+        });
+    }
+
 }

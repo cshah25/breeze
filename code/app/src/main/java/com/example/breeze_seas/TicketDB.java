@@ -29,7 +29,7 @@ import java.util.Locale;
  * TicketDB loads ticket-tab data and isolates Firestore access from the UI layer.
  *
  * <p>Current integration scope:
- * - uses the agreed device-based schema from {@code test_events/{eventId}/participants/{deviceId}}
+ * - uses the agreed device-based schema from {@code events/{eventId}/participants/{deviceId}}
  * - supports live Firestore loading for the agreed participant statuses
  *
  * <p>Outstanding:
@@ -48,7 +48,7 @@ public final class TicketDB {
     }
 
     private static final String TAG = "TicketDB";
-    private static final String EVENTS_COLLECTION = "test_events";
+    private static final String EVENTS_COLLECTION = "events";
     private static final String PARTICIPANTS_COLLECTION = "participants";
 
     private static final TicketDB INSTANCE = new TicketDB();
