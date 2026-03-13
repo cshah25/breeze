@@ -104,4 +104,26 @@ public class NotificationService {
                 });
     }
 
+    /**
+     * Get all notifications
+     *
+     * @param listener Callback to handle the retrieved data or errors.
+     */
+    public void getAllNotifications(OnNotificationLoadedListener listener) {
+        notificationsRef
+                .orderBy("sentAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Notification> notifications = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        notifications.add(doc.toObject(Notification.class));
+                    }
+                    listener.onNotificationLoaded(notifications);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("DB_ERROR", "Error fetching all notifications", e);
+                    listener.onError(e);
+                });
+    }
+
 }
