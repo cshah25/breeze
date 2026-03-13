@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -71,7 +72,7 @@ public class AttendingTicketsFragment extends Fragment {
         });
         recyclerView.setAdapter(adapter);
         ticketDb.addListener(ticketsListener);
-        ticketDb.refreshTickets(requireContext());
+        refreshTickets();
         renderTickets();
 
         return view;
@@ -102,6 +103,16 @@ public class AttendingTicketsFragment extends Fragment {
         adapter.submitList(tickets);
         recyclerView.setVisibility(hasTickets ? View.VISIBLE : View.GONE);
         emptyState.setVisibility(hasTickets ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * Reloads the ticket lists using the current session user's device id when available.
+     */
+    private void refreshTickets() {
+        SessionViewModel viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
+        User currentUser = viewModel.getUser().getValue();
+        String preferredDeviceId = currentUser == null ? null : currentUser.getDeviceId();
+        ticketDb.refreshTickets(requireContext(), preferredDeviceId);
     }
 
     /**

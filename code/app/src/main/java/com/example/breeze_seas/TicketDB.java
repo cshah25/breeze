@@ -108,7 +108,19 @@ public final class TicketDB {
      * @param context Context used to resolve the Android device identifier.
      */
     public void refreshTickets(@NonNull Context context) {
-        String deviceId = getCurrentDeviceId(context.getApplicationContext());
+        refreshTickets(context, null);
+    }
+
+    /**
+     * Reloads all ticket lists for the provided device-scoped entrant.
+     *
+     * <p>If the preferred device id is unavailable, this falls back to the current Android device id.
+     *
+     * @param context Context used to resolve the Android device identifier fallback.
+     * @param preferredDeviceId Preferred participant device id from the signed-in user session.
+     */
+    public void refreshTickets(@NonNull Context context, @Nullable String preferredDeviceId) {
+        String deviceId = resolveCurrentDeviceId(context.getApplicationContext(), preferredDeviceId);
         if (deviceId == null) {
             Log.w(TAG, "No current device id could be resolved for Tickets.");
             replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
@@ -192,7 +204,11 @@ public final class TicketDB {
      * @return Device identifier for the current install, or {@code null} if unavailable.
      */
     @Nullable
-    private String getCurrentDeviceId(@NonNull Context context) {
+    private String resolveCurrentDeviceId(@NonNull Context context, @Nullable String preferredDeviceId) {
+        if (preferredDeviceId != null && !preferredDeviceId.trim().isEmpty()) {
+            return preferredDeviceId.trim();
+        }
+
         String androidId = Settings.Secure.getString(
                 context.getContentResolver(),
                 Settings.Secure.ANDROID_ID
@@ -211,25 +227,24 @@ public final class TicketDB {
      * @param deviceId Device-scoped entrant identifier used by the participant schema.
      */
     private void loadTicketsForDeviceId(@NonNull String deviceId) {
-        db.collectionGroup(PARTICIPANTS_COLLECTION)
-                .whereEqualTo("deviceId", deviceId)
+        db.collection(EVENTS_COLLECTION)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     /**
-                     * Starts resolving event details for the matching participant rows.
+                     * Starts resolving participant rows for each event document.
                      *
-                     * @param querySnapshot Matching participant rows for the current device id.
+                     * @param querySnapshot Event documents currently available in Firestore.
                      */
                     @Override
                     public void onSuccess(QuerySnapshot querySnapshot) {
-                        handleParticipantsLoaded(querySnapshot);
+                        handleEventsLoaded(querySnapshot, deviceId);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     /**
-                     * Clears the ticket lists if the participant query fails.
+                     * Clears the ticket lists if the event query fails.
                      *
-                     * @param e Query failure that prevented participant loading.
+                     * @param e Query failure that prevented event loading.
                      */
                     @Override
                     public void onFailure(@NonNull Exception e) {
@@ -239,19 +254,20 @@ public final class TicketDB {
     }
 
     /**
-     * Builds ticket-loading tasks for each participant row returned by Firestore.
+     * Builds ticket-loading tasks for each event document returned by Firestore.
      *
-     * @param querySnapshot Matching participant rows for the current device id.
+     * @param querySnapshot Event documents currently available in Firestore.
+     * @param deviceId Device-scoped entrant identifier used to load participant rows.
      */
-    private void handleParticipantsLoaded(@Nullable QuerySnapshot querySnapshot) {
+    private void handleEventsLoaded(@Nullable QuerySnapshot querySnapshot, @NonNull String deviceId) {
         if (querySnapshot == null || querySnapshot.isEmpty()) {
             replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
             return;
         }
 
         List<Task<LoadedTicket>> ticketTasks = new ArrayList<>();
-        for (QueryDocumentSnapshot participantEntry : querySnapshot) {
-            ticketTasks.add(loadTicket(participantEntry));
+        for (QueryDocumentSnapshot eventDocument : querySnapshot) {
+            ticketTasks.add(loadTicket(eventDocument, deviceId));
         }
 
         Tasks.whenAllSuccess(ticketTasks)
@@ -330,75 +346,59 @@ public final class TicketDB {
     }
 
     /**
-     * Loads the related event document and maps one participant row into a ticket UI model.
+     * Loads the participant row for one event and maps it into a ticket UI model when present.
      *
-     * @param participantEntry Participant row returned from the agreed schema.
+     * @param eventDocument Event document that may contain a participant row for the current device.
+     * @param deviceId Device-scoped entrant identifier used to locate the participant row.
      * @return Task that resolves to a mapped ticket payload or {@code null} if it cannot be built.
      */
     @NonNull
-    private Task<LoadedTicket> loadTicket(@NonNull QueryDocumentSnapshot participantEntry) {
-        String eventId = participantEntry.getString("eventId");
-        DocumentReference eventReference = null;
-        if (participantEntry.getReference().getParent() != null
-                && participantEntry.getReference().getParent().getParent() != null) {
-            eventReference = participantEntry.getReference().getParent().getParent();
-        }
-
-        if ((eventId == null || eventId.trim().isEmpty()) && eventReference != null) {
-            eventId = eventReference.getId();
-        }
-
-        if (eventId == null || eventId.trim().isEmpty()) {
-            return Tasks.forResult(null);
-        }
-
-        String status = normalizeStatus(participantEntry.getString("status"));
-        Timestamp joinedAt = participantEntry.getTimestamp("joinedAt");
-
-        DocumentReference resolvedEventReference = eventReference != null
-                ? eventReference
-                : db.collection(EVENTS_COLLECTION).document(eventId);
-
-        return resolvedEventReference
+    private Task<LoadedTicket> loadTicket(@NonNull QueryDocumentSnapshot eventDocument, @NonNull String deviceId) {
+        return eventDocument.getReference()
+                .collection(PARTICIPANTS_COLLECTION)
+                .document(deviceId)
                 .get()
                 .continueWith(new Continuation<DocumentSnapshot, LoadedTicket>() {
                     /**
-                     * Maps the fetched event document into the corresponding ticket UI payload.
+                     * Maps the fetched participant row into the corresponding ticket UI payload.
                      *
-                     * @param task Event-document lookup task for the participant row.
+                     * @param task Participant-document lookup task for the current device id.
                      * @return Resolved ticket payload, or {@code null} if mapping is not possible.
                      */
                     @Override
                     public LoadedTicket then(@NonNull Task<DocumentSnapshot> task) {
-                        return continueLoadingTicket(task, participantEntry, status, joinedAt);
+                        return continueLoadingTicket(task, eventDocument);
                     }
                 });
     }
 
     /**
-     * Continues ticket mapping after the related event document finishes loading.
+     * Continues ticket mapping after the participant row finishes loading.
      *
-     * @param task Event-document lookup task for the participant row.
-     * @param participantEntry Participant row that requested the event lookup.
-     * @param status Normalized participant status.
-     * @param joinedAt Participant join timestamp used as a display fallback.
+     * @param task Participant-document lookup task for the current device id.
+     * @param eventDocument Event document associated with the participant row.
      * @return Resolved ticket payload, or {@code null} if mapping is not possible.
      */
     @Nullable
     private LoadedTicket continueLoadingTicket(
             @NonNull Task<DocumentSnapshot> task,
-            @NonNull QueryDocumentSnapshot participantEntry,
-            @NonNull String status,
-            @Nullable Timestamp joinedAt
+            @NonNull QueryDocumentSnapshot eventDocument
     ) {
         if (!task.isSuccessful()) {
             if (task.getException() != null) {
-                Log.e(TAG, "Failed to fetch event document for participant row " + participantEntry.getId(), task.getException());
+                Log.e(TAG, "Failed to fetch participant row for event " + eventDocument.getId(), task.getException());
             }
             return null;
         }
 
-        return mapTicket(status, task.getResult(), joinedAt);
+        DocumentSnapshot participantEntry = task.getResult();
+        if (participantEntry == null || !participantEntry.exists()) {
+            return null;
+        }
+
+        String status = normalizeStatus(participantEntry.getString("status"));
+        Timestamp timeJoined = participantEntry.getTimestamp("timeJoined");
+        return mapTicket(status, eventDocument, timeJoined);
     }
 
     /**
@@ -406,14 +406,14 @@ public final class TicketDB {
      *
      * @param status Normalized participant status from Firestore.
      * @param eventDocument Event document used to build display fields.
-     * @param joinedAt Participant join timestamp used as a display fallback.
+     * @param timeJoined Participant join timestamp used as a display fallback.
      * @return Ticket payload for one of the three tabs, or {@code null} if the row should be ignored.
      */
     @Nullable
     private LoadedTicket mapTicket(
             @NonNull String status,
             @Nullable DocumentSnapshot eventDocument,
-            @Nullable Timestamp joinedAt
+            @Nullable Timestamp timeJoined
     ) {
         if (eventDocument == null || !eventDocument.exists()) {
             return null;
@@ -421,7 +421,7 @@ public final class TicketDB {
 
         String eventId = eventDocument.getId();
         String title = buildTitleLabel(eventDocument);
-        String dateLabel = buildDateLabel(eventDocument, joinedAt);
+        String dateLabel = buildDateLabel(eventDocument, timeJoined);
         String locationLabel = buildLocationLabel(eventDocument);
 
         if ("waiting".equals(status)) {
@@ -442,7 +442,7 @@ public final class TicketDB {
             ));
         }
 
-        if ("invited".equals(status)) {
+        if ("invited".equals(status) || "pending".equals(status)) {
             return LoadedTicket.forActive(new TicketUIModel(
                     eventId,
                     title,
@@ -483,11 +483,11 @@ public final class TicketDB {
      * Builds the date label shown on ticket cards using the strongest available event timestamp.
      *
      * @param eventDocument Event document used to source display timestamps.
-     * @param joinedAt Participant join timestamp used as the last fallback.
+     * @param timeJoined Participant join timestamp used as the last fallback.
      * @return Human-readable date label for the ticket card.
      */
     @NonNull
-    private String buildDateLabel(@NonNull DocumentSnapshot eventDocument, @Nullable Timestamp joinedAt) {
+    private String buildDateLabel(@NonNull DocumentSnapshot eventDocument, @Nullable Timestamp timeJoined) {
         Timestamp displayTimestamp = eventDocument.getTimestamp("eventStartDate");
         if (displayTimestamp == null) {
             displayTimestamp = eventDocument.getTimestamp("eventStart");
@@ -511,7 +511,7 @@ public final class TicketDB {
             displayTimestamp = eventDocument.getTimestamp("registrationOpenAt");
         }
         if (displayTimestamp == null) {
-            displayTimestamp = joinedAt;
+            displayTimestamp = timeJoined;
         }
 
         if (displayTimestamp == null) {
@@ -555,7 +555,7 @@ public final class TicketDB {
             return "Geolocation required";
         }
 
-        return "Event details available in app";
+        return "Location to be announced";
     }
 
     /**

@@ -3,6 +3,7 @@ package com.example.breeze_seas;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -101,13 +102,16 @@ public class EventDetailsFragment extends Fragment {
                     int waitingListCapacity = waitingList.getCapacity();
                     int waitingListSize = waitingList.getSize();
                     if ((waitingListCapacity != -1) && (waitingListSize>= waitingListCapacity)) {
+                        Log.w("waitingList DB Call", "Waiting list capacity reached for event " + eventShown.getEventId());
+                        Toast.makeText(requireContext(), "The waiting list is full for this event.", Toast.LENGTH_SHORT).show();
                         return; // TODO: implement unable to join msg
                     }
-                    waitingList.addUser(user, new StatusList.ListUpdateListener() {
+                            waitingList.addUser(user, new StatusList.ListUpdateListener() {
                         @Override
                         public void onUpdate() {
                             showWaiting();
                             updateView();
+                            refreshTickets();
                         }
 
                         @Override
@@ -135,6 +139,7 @@ public class EventDetailsFragment extends Fragment {
                             waitingList.popUser(user);
                             showJoin();
                             updateView();
+                            refreshTickets();
                         }
                         @Override
                         public void onError(Exception e) {
@@ -159,6 +164,7 @@ public class EventDetailsFragment extends Fragment {
                     int acceptedListCapacity = acceptedList.getCapacity();
                     int acceptedListSize = waitingList.getSize();
                     if (acceptedListSize >= acceptedListCapacity) {
+                        Toast.makeText(requireContext(), "The event is already full.", Toast.LENGTH_SHORT).show();
                         return; // TODO: implement unable to join msg
                     }
                     acceptedList.addUser(user, new StatusList.ListUpdateListener() {
@@ -168,6 +174,7 @@ public class EventDetailsFragment extends Fragment {
                             waitingList.popUser(user);
                             showAccepted();
                             updateView();
+                            refreshTickets();
                         }
                         @Override
                         public void onError(Exception e) {
@@ -195,6 +202,7 @@ public class EventDetailsFragment extends Fragment {
                             waitingList.popUser(user);
                             showDeclined();
                             updateView();
+                            refreshTickets();
                         }
                         @Override
                         public void onError(Exception e) {
@@ -342,5 +350,13 @@ public class EventDetailsFragment extends Fragment {
 
         // Show
         eventInviteDeclinedText.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Reloads ticket data using the current session user's device id when available.
+     */
+    private void refreshTickets() {
+        String preferredDeviceId = user == null ? null : user.getDeviceId();
+        TicketDB.getInstance().refreshTickets(requireContext(), preferredDeviceId);
     }
 }
