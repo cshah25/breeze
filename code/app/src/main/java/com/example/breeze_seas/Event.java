@@ -1,5 +1,7 @@
 package com.example.breeze_seas;
 
+import android.util.Log;
+
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 
@@ -640,41 +642,38 @@ public class Event {
 
             @Override
             public void onError(Exception e) {
+                Log.e("EventDB", "Error: ", e);
             }
         });
         pendingList.refresh(new StatusList.ListUpdateListener() {
             @Override
             public void onUpdate() {
-
             }
 
             @Override
             public void onError(Exception e) {
-
+                Log.e("EventDB", "Error: ", e);
             }
         });
         acceptedList.refresh(new StatusList.ListUpdateListener() {
             @Override
             public void onUpdate() {
-
             }
 
             @Override
             public void onError(Exception e) {
-
+                Log.e("EventDB", "Error: ", e);
             }
         });
         declinedList.refresh(new StatusList.ListUpdateListener() {
             @Override
             public void onUpdate() {
-
             }
 
             @Override
             public void onError(Exception e) {
-
+                Log.e("EventDB", "Error: ", e);
             }
         });
     }
-
 }

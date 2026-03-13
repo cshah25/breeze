@@ -92,7 +92,7 @@ public abstract class StatusList {
                 .document(event.getEventId())
                 .collection("participants")
                 .whereEqualTo("status", getStatusName())
-                .orderBy("timeJoined", Query.Direction.ASCENDING)
+                //.orderBy("timeJoined", Query.Direction.ASCENDING) // TODO: THIS IS BREAKING THE QUERY
                 .get()
                 .addOnSuccessListener(participantDocs -> {
                     userList.clear();
