@@ -38,6 +38,7 @@ public class OrganizerEventPreviewFragment extends Fragment {
     private TextInputEditText regFromInput;
     private TextInputEditText regToInput;
     private TextInputEditText capacityInput;
+    private TextInputEditText waitingListCapacityInput;
     private TextInputEditText detailsInput;
     private SwitchMaterial geoSwitch;
 
@@ -186,6 +187,7 @@ public class OrganizerEventPreviewFragment extends Fragment {
         regFromInput = view.findViewById(R.id.organizer_event_preview_reg_from_input);
         regToInput = view.findViewById(R.id.organizer_event_preview_reg_to_input);
         capacityInput = view.findViewById(R.id.organizer_event_preview_capacity_input);
+        waitingListCapacityInput = view.findViewById(R.id.organizer_event_preview_waiting_list_capacity_input);
         detailsInput = view.findViewById(R.id.organizer_event_preview_details_input);
         geoSwitch = view.findViewById(R.id.organizer_event_preview_geo_switch);
     }
@@ -282,7 +284,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
         nameInput.setText(event.getName());
         regFromInput.setText(formatDate(regFromMillis));
         regToInput.setText(formatDate(regToMillis));
-        capacityInput.setText(event.getWaitingListCapacity() < 0 ? "" : String.valueOf(event.getWaitingListCapacity()));
+        capacityInput.setText(event.getEventCapacity() < 0 ? "" : String.valueOf(event.getEventCapacity()));
+        waitingListCapacityInput.setText(event.getWaitingListCapacity() < 0 ? "" : String.valueOf(event.getWaitingListCapacity()));
         detailsInput.setText(event.getDescription());
         geoSwitch.setChecked(event.isGeolocationEnforced());
 

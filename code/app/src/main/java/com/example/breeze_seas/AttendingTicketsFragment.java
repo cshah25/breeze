@@ -114,9 +114,6 @@ public class AttendingTicketsFragment extends Fragment {
             return;
         }
 
-        Intent intent = new Intent(requireContext(), ViewQrCodeActivity.class);
-        intent.putExtra("eventId", ticket.getEventId());
-        intent.putExtra("eventName", ticket.getTitle());
-        startActivity(intent);
+        // TODO: Open QRCode Fragment
     }
 }

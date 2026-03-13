@@ -35,7 +35,7 @@ public class CreateEventFragment extends Fragment {
     private ImageView ivPoster;
     private LinearLayout posterPlaceholder;
 
-    private TextInputEditText etRegFrom, etRegTo, etEventName, etEventDetails, etCapacity;
+    private TextInputEditText etRegFrom, etRegTo, etEventName, etEventDetails, etCapacity, etWaitingListCapacity;
     private SwitchMaterial swGeo;
     private SessionViewModel viewModel;
 
@@ -104,6 +104,7 @@ public class CreateEventFragment extends Fragment {
         etEventName = view.findViewById(R.id.etEventName);
         etEventDetails = view.findViewById(R.id.etEventDetails);
         etCapacity = view.findViewById(R.id.etCapacity);
+        etWaitingListCapacity = view.findViewById(R.id.etWaitingListCapacity);
         swGeo = view.findViewById(R.id.swGeo);
 
         View.OnClickListener pickPoster = new View.OnClickListener() {
@@ -192,6 +193,7 @@ public class CreateEventFragment extends Fragment {
         String name = etEventName.getText() == null ? "" : etEventName.getText().toString().trim();
         String details = etEventDetails.getText() == null ? "" : etEventDetails.getText().toString().trim();
         String capText = etCapacity.getText() == null ? "" : etCapacity.getText().toString().trim();
+        String waitingListText = etWaitingListCapacity.getText() == null ? "" : etWaitingListCapacity.getText().toString().trim();
 
         if (TextUtils.isEmpty(name)) {
             etEventName.setError("Required");
@@ -209,17 +211,32 @@ public class CreateEventFragment extends Fragment {
             return;
         }
 
-        Integer cap = null;
+        Integer eventCap = null;
+        if (TextUtils.isEmpty(capText)) {
+            etCapacity.setError("Number required");
+            return;
+        }
         if (!TextUtils.isEmpty(capText)) {
             try {
-                cap = Integer.parseInt(capText);
+                eventCap = Integer.parseInt(capText);
             } catch (NumberFormatException e) {
                 etCapacity.setError("Enter a valid number");
                 return;
             }
         }
 
-        int normalizedCapacity = cap == null ? -1 : cap;
+        Integer eventWaitingListCap = null;
+        if (!TextUtils.isEmpty(waitingListText)) {
+            try {
+                eventWaitingListCap = Integer.parseInt(waitingListText);
+            } catch (NumberFormatException e) {
+                etWaitingListCapacity.setError("Enter a valid number");
+                return;
+            }
+        }
+
+        int normalizedCapacity = eventCap == null ? -1 : eventCap;
+        int normalizedEventWaitingListCapacity = eventWaitingListCap == null ? -1 : eventWaitingListCap;
         Event event = new Event(
                 organizerId,
                 name,
@@ -232,7 +249,7 @@ public class CreateEventFragment extends Fragment {
                 null,
                 swGeo.isChecked(),
                 normalizedCapacity,
-                normalizedCapacity,
+                normalizedEventWaitingListCapacity,
                 0
         );
 
