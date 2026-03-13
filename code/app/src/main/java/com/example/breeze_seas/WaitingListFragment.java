@@ -1,6 +1,10 @@
 package com.example.breeze_seas;
 
 
+import static com.example.breeze_seas.NotificationType.ANNOUNCEMENT_WAITLIST;
+import static com.example.breeze_seas.NotificationType.LOSS;
+import static com.example.breeze_seas.NotificationType.WIN;
+
 import android.os.Bundle;
 
 
@@ -15,20 +19,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 
 import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
 
 
 public class WaitingListFragment extends Fragment {
 
 
     private WaitingList waitingList;
+    ArrayList<User> waitingListUserList = new ArrayList<>();
     private OrganizerListAdapter adapter;
     private ListView listView;
     private ProgressBar waitingProgress;
     private SessionViewModel sessionViewModel;
     private Event currentEvent;
+    private NotificationService notificationService = new NotificationService();
 
 
     public WaitingListFragment() { }
@@ -50,6 +59,7 @@ public class WaitingListFragment extends Fragment {
         waitingProgress = view.findViewById(R.id.waiting_list_spinner);
         if (currentEvent != null) {
             waitingList = new WaitingList(currentEvent, currentEvent.getWaitingListCapacity());
+            waitingListUserList = waitingList.getUserList();
             adapter = new OrganizerListAdapter(getContext(), R.layout.item_organizer_list, waitingList.getUserList());
             listView.setAdapter(adapter);
         }
@@ -79,6 +89,46 @@ public class WaitingListFragment extends Fragment {
                 @Override
                 public void onUpdate() {
                     if (isAdded()) {
+                        // Notifications to winners and losers of the lottery
+                        ArrayList<User> winnerList = currentEvent.getPendingList().getUserList();
+                        ArrayList<User> loserList = new ArrayList<>(waitingListUserList);
+                        loserList.removeAll(winnerList);
+
+                        String userSent ="";
+                        String content = "";
+                        String eventId = currentEvent.getEventId();
+                        String eventName = currentEvent.getName();
+
+                        // Win announcement
+                        if (!winnerList.isEmpty()) {
+                            for (int i = 0; i < winnerList.size(); i++) {
+                                userSent = winnerList.get(i).getDeviceId();
+                                // Send the notification to the database
+                                Notification notification = new Notification(WIN, content, eventId, eventName, userSent);
+                                notificationService.sendNotification(notification);
+                            }
+                            Toast.makeText(getContext(), "Notification Sent!",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "No users in this list!",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                        // Loss announcement
+                        if (!loserList.isEmpty()) {
+                            for (int i = 0; i < loserList.size(); i++) {
+                                userSent = loserList.get(i).getDeviceId();
+                                // Send the notification to the database
+                                Notification notification = new Notification(LOSS, content, eventId, eventName, userSent);
+                                notificationService.sendNotification(notification);
+                            }
+                            Toast.makeText(getContext(), "Notification Sent!",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "No users in this list!",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
                         refreshWaitingList();
                         runLotteryBtn.setEnabled(true);
 
