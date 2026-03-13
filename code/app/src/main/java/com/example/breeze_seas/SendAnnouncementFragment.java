@@ -21,6 +21,10 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputLayout;
 
+/**
+ * A Fragment that provides the interface for organizers to send announcements.
+ * It manages the tab selection for different audience types (Waitlist, Selected, Cancelled)
+ */
 public class SendAnnouncementFragment extends Fragment {
 
     private AppBarLayout appBarLayout;

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*** ProfileFragment is a top-level destination accessed via Bottom Navigation.
- *
  * <p>Current state:* - A placeholder screen was created to validate the navigation wiring and theme style.
  ** <p>Outstanding/Future Work:* - Set up entrant profile viewing/editing and notification choices.
  */

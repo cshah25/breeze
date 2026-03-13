@@ -20,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 public class NotificationFragment extends Fragment {
 
     private UserDB userDBInstance = new UserDB();
@@ -81,6 +83,8 @@ public class NotificationFragment extends Fragment {
                                 public void onNotificationLoaded(List<Notification> fetchedNotifications) {
                                     notifications.addAll(fetchedNotifications);
                                     if (!notifications.isEmpty()) {
+                                        notifications.clear();
+                                        notifications.addAll(fetchedNotifications);
                                         notificationsRecycler.setVisibility(View.VISIBLE);
                                         emptyStateLayout.setVisibility(View.GONE);
                                         adapter.notifyDataSetChanged();
@@ -97,6 +101,7 @@ public class NotificationFragment extends Fragment {
                                 }
                             });
                 } else {
+                    notificationsRecycler.setVisibility(GONE);
                     optOutStateLayout.setVisibility(VISIBLE);
                 }
             }
