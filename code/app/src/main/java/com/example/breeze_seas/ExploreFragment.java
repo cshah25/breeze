@@ -88,6 +88,11 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
         });
     }
 
+    /**
+     * Load and display all events that are not organized by the user.
+     * @param view The current view
+     * @param events ArrayList of events
+     */
     private void loadEvents(View view, ArrayList<Event> events) {
         // filter for events not owned by you
         ArrayList<Event> tmp = new ArrayList<>();

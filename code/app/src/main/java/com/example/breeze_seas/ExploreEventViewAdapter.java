@@ -12,6 +12,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.Timestamp;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -47,7 +49,7 @@ public class ExploreEventViewAdapter extends RecyclerView.Adapter<ExploreEventVi
                 : event.getDetails());
         holder.eventTimeRemaining.setText(holder.itemView.getContext().getString(
                 R.string.explore_card_registration_closes,
-                formatDate(event.getRegToMillis())
+                formatDate(event.getRegistrationEndDate())
         ));
         holder.eventWaitingListCount.setText(R.string.explore_card_lottery);
         holder.eventCapacity.setText(event.getWaitingListCap() == null
@@ -102,14 +104,9 @@ public class ExploreEventViewAdapter extends RecyclerView.Adapter<ExploreEventVi
         }
     }
 
-    private String formatDate(long millis) {
-        if (millis <= 0L) {
-            return context.getString(R.string.organizer_event_preview_not_set);
-        }
-
+    private String formatDate(Timestamp timestamp) {
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.US);
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return sdf.format(new Date(millis));
+        return sdf.format(new Date(timestamp.toDate().getTime()));
 
 
     }
