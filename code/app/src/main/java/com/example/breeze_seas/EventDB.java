@@ -29,7 +29,7 @@ public class EventDB {
     private static void setup() {
         if (!setup) {
             db = DBConnector.getDb();
-            eventRef = db.collection("test_events");
+            eventRef = db.collection("events");
             setup = true;
         }
     }
@@ -131,6 +131,11 @@ public class EventDB {
     }
 
     // Get event by id
+    public interface LoadSingleEventCallback {
+        void onSuccess(Event event);
+        void onFailure(Exception e);
+    }
+
     public static void getEventById(String eventId,LoadSingleEventCallback callback){
         setup();
         eventRef.document(eventId).get().
@@ -162,10 +167,6 @@ public class EventDB {
                 .delete()
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
-    }
-    public interface LoadSingleEventCallback {
-        void onSuccess(Event event);
-        void onFailure(Exception e);
     }
 
     public static Event fromDocument(DocumentSnapshot doc) {
@@ -207,6 +208,7 @@ public class EventDB {
         newEvent.setPendingList(new PendingList(newEvent, eventCap));
         newEvent.setAcceptedList(new AcceptedList(newEvent, eventCap));
         newEvent.setDeclinedList(new DeclinedList(newEvent, -1));
+        newEvent.refreshListsFromDB();
 
         return newEvent;
     }

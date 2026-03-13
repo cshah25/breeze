@@ -12,6 +12,9 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textview.MaterialTextView;
 
+import java.util.ArrayList;
+import java.util.Objects;
+
 public class EventDetailsFragment extends Fragment {
     private ShapeableImageView returnButton;
     private MaterialTextView eventTitle;
@@ -32,6 +35,8 @@ public class EventDetailsFragment extends Fragment {
 
     private SessionViewModel viewModel;
     private Event eventShown;
+    private WaitingList waitingList;
+    private User user;
 
     public EventDetailsFragment () {
         super(R.layout.fragment_event_details);
@@ -48,6 +53,11 @@ public class EventDetailsFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Grab event and user from SessionViewModel
+        eventShown = viewModel.getEventShown().getValue();
+        assert eventShown != null;
+        waitingList = eventShown.getWaitingList();
+        user = viewModel.getUser().getValue();
 
         // Bind all views
         eventTitle = view.findViewById(R.id.event_details_event_title);
@@ -74,30 +84,51 @@ public class EventDetailsFragment extends Fragment {
         });
         joinWaitingListButton = view.findViewById(R.id.event_details_join_waitlist_button);
         joinWaitingListButton.setOnClickListener(v -> {
-            // TODO: implement join waiting list logic here
-            //showPending();
+            // Add user to waitlist logic
+            waitingList.addUser(user, new StatusList.ListUpdateListener() {
+                @Override
+                public void onUpdate() {
+                    showWaiting();
+                    updateView();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                }
+            });
         });
+
         leaveWaitingListButton = view.findViewById(R.id.event_details_leave_waitlist_button);
         leaveWaitingListButton.setOnClickListener(v -> {
-            // TODO: implement leave waiting list logic here
-            //showJoin();
+            // Remove user from waitlist logic
+            waitingList.removeUserFromDB(user, new StatusList.ListUpdateListener() {
+                @Override
+                public void onUpdate() {
+                    waitingList.popUser(user);
+                    showJoin();
+                    updateView();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                }
+            });
         });
+
         acceptInviteButton = view.findViewById(R.id.event_details_accept_invite_button);
         acceptInviteButton.setOnClickListener(v -> {
             // TODO: implement logic for accepting invite here
             //showAccepted();
         });
+
         declineInviteButton = view.findViewById(R.id.event_details_decline_invite_button);
         declineInviteButton.setOnClickListener(v -> {
             // TODO: implement logic for declining invite here
             //showDeclined();
         });
 
-        // Grab event form SessionViewModel
-        eventShown = viewModel.getEventShown().getValue();
-
         // Feed info into updateView()
-        updateView(eventShown);
+        updateView();
 
         /*
         TODO: Need logic to present user options
@@ -108,28 +139,24 @@ public class EventDetailsFragment extends Fragment {
          5. If user in cancelled list, bring up message "Maybe next time."
          */
 
-        // Assuming user is not in event
-        // Show join waiting list button for now
-        showJoin();
+        // Get user
+        if (waitingList.userIsInList(user)) {
+            showWaiting();
+        } else {
+            showJoin();
+        }
 
     }
 
     /**
-     * Takes the event object and updates all views to reflect event information
-     * @param event Event object to grab details from
+     * Takes eventShown and updates all views to reflect event information
      */
-    private void updateView(Event event) {
-        eventTitle.setText(event.getName());
+    private void updateView() {
+        eventTitle.setText(eventShown.getName());
         // eventPoster.setImageDrawable();  // TODO: need Poster and PosterDB
         eventPoster.setImageResource(R.drawable.ic_image_placeholder);
-
-        // TODO: event class needs capacity attribute
-        //eventCapacity.setText();
-        eventCapacity.setText(formatter("Capacity:", "N/A"));
-
-        // TODO: event class needs method to return count of people in waiting list
-        //eventWaitingListCount.setText();
-        eventWaitingListCount.setText(formatter("Currently in Waiting List:", "N/A"));
+        eventCapacity.setText(formatter("Capacity:", String.valueOf(eventShown.getEventCapacity())));
+        eventWaitingListCount.setText(formatter("Currently in Waiting List:", String.valueOf(waitingList.getSize())));
 
         // TODO: event class needs startDate
         //eventStartDate.setText();
@@ -138,8 +165,7 @@ public class EventDetailsFragment extends Fragment {
         // TODO: event class needs endDate
         //eventEndDate.setText();
         eventEndDate.setText(formatter("Ends:", "N/A"));
-
-        eventDescription.setText(event.getDescription());
+        eventDescription.setText(eventShown.getDescription());
     }
 
     /**
