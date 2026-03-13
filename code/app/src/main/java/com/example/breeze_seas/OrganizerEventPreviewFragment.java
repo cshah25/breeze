@@ -2,6 +2,7 @@ package com.example.breeze_seas;
 
 import android.app.AlertDialog;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -17,11 +18,12 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 /**
  * OrganizerEventPreviewFragment displays one organizer-owned event and provides organizer actions
@@ -42,8 +44,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
     private TextInputEditText detailsInput;
     private SwitchMaterial geoSwitch;
 
-    private Long regFromMillis;
-    private Long regToMillis;
+    private Timestamp regStartDate;
+    private Timestamp regEndDate;
     private String posterUriString;
 
     private final ActivityResultLauncher<String> pickImage =
@@ -269,12 +271,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
         }
 
 
-        regFromMillis = event.getRegistrationStartDate() == null
-                ? null
-                : event.getRegistrationStartDate().toDate().getTime();
-        regToMillis = event.getRegistrationEndDate() == null
-                ? null
-                : event.getRegistrationEndDate().toDate().getTime();
+        regStartDate = event.getRegistrationStartDate();
+        regEndDate = event.getRegistrationEndDate();
         posterUriString = event.getImage();
 
         ((android.widget.TextView) root.findViewById(R.id.organizer_event_preview_title)).setText(event.getName());
@@ -282,8 +280,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
                 .setText(R.string.organizer_event_preview_subtitle_text);
 
         nameInput.setText(event.getName());
-        regFromInput.setText(formatDate(regFromMillis));
-        regToInput.setText(formatDate(regToMillis));
+        regFromInput.setText(formatDate(regStartDate));
+        regToInput.setText(formatDate(regEndDate));
         capacityInput.setText(event.getEventCapacity() < 0 ? "" : String.valueOf(event.getEventCapacity()));
         waitingListCapacityInput.setText(event.getWaitingListCapacity() < 0 ? "" : String.valueOf(event.getWaitingListCapacity()));
         detailsInput.setText(event.getDescription());
@@ -301,8 +299,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
                         .setTheme(R.style.ThemeOverlay_Breezeseas_DateRangePicker)
                         .setTitleText("Select registration period");
 
-        if (regFromMillis != null && regToMillis != null) {
-            builder.setSelection(new androidx.core.util.Pair<>(regFromMillis, regToMillis));
+        if (regStartDate != null && regEndDate != null) {
+            builder.setSelection(new androidx.core.util.Pair<>(regStartDate.toDate().getTime(), regEndDate.toDate().getTime()));
         }
 
         MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
@@ -318,11 +316,13 @@ public class OrganizerEventPreviewFragment extends Fragment {
                     return;
                 }
 
-                regFromMillis = selection.first;
-                regToMillis = selection.second;
+                // TODO: Fix API in the future
+                regStartDate = new Timestamp(Instant.ofEpochSecond(selection.first));
+                regEndDate = new Timestamp(Instant.ofEpochSecond(selection.second));
 
-                regFromInput.setText(formatDate(regFromMillis));
-                regToInput.setText(formatDate(regToMillis));
+
+                regFromInput.setText(formatDate(regStartDate));
+                regToInput.setText(formatDate(regEndDate));
             }
         });
 
@@ -456,17 +456,13 @@ public class OrganizerEventPreviewFragment extends Fragment {
     }
 
     /**
-     * Formats an epoch-millis value into the organizer preview date label.
+     * Formats a timestamp into the organizer preview date label.
      *
-     * @param millis Epoch milliseconds to format, or {@code null}.
-     * @return Display-ready date string, or the localized not-set label if unavailable.
+     * @param timestamp The timestamp to format.
+     * @return Display-ready date string.
      */
-    private String formatDate(@Nullable Long millis) {
-        if (millis == null || millis <= 0L) {
-            return getString(R.string.organizer_event_preview_not_set);
-        }
+    private String formatDate(Timestamp timestamp) {
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.US);
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return sdf.format(new Date(millis));
+        return sdf.format(new Date(timestamp.toDate().getTime()));
     }
 }

@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.Timestamp;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -262,7 +264,7 @@ public class OrganizeFragment extends Fragment {
             holder.tvName.setText(e.getName());
 
             SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.US);
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            //sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String from = formatTimestamp(sdf, e.getRegistrationStartDate());
             String to = formatTimestamp(sdf, e.getRegistrationEndDate());
             holder.tvDates.setText("Reg: " + from + " → " + to);
@@ -302,14 +304,11 @@ public class OrganizeFragment extends Fragment {
          * Formats a Firestore timestamp for organizer list display.
          *
          * @param sdf Date formatter configured for organizer display.
-         * @param timestamp Firestore timestamp to format, or {@code null}.
+         * @param timestamp Firestore timestamp to format.
          * @return Display-ready date string, or {@code "Not set"} when the timestamp is absent.
          */
         @NonNull
-        private String formatTimestamp(@NonNull SimpleDateFormat sdf, @Nullable com.google.firebase.Timestamp timestamp) {
-            if (timestamp == null) {
-                return "Not set";
-            }
+        private String formatTimestamp(@NonNull SimpleDateFormat sdf, @Nullable Timestamp timestamp) {
             return sdf.format(new Date(timestamp.toDate().getTime()));
         }
     }
