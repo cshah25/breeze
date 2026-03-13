@@ -23,22 +23,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".OrganizerDashboardActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".CreateEventActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ViewQrCodeActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".FilterActivity"
-            android:exported="false" />
-
     </application>
 
 </manifest>
