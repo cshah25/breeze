@@ -16,6 +16,17 @@ public class AttendingTicketUIModel {
     private final String entryNote;
     private final String actionLabel;
 
+    /**
+     * Creates a presentation model for one attending ticket card.
+     *
+     * @param eventId Firestore event identifier for the related event.
+     * @param title Event title shown on the card.
+     * @param dateLabel Human-readable date string shown on the card.
+     * @param locationLabel Human-readable location string shown on the card.
+     * @param ticketTypeLabel Summary label describing the ticket type/state.
+     * @param entryNote Supporting copy shown under the main ticket details.
+     * @param actionLabel Label describing the tap action available on the card.
+     */
     public AttendingTicketUIModel(
             String eventId,
             String title,
@@ -34,30 +45,65 @@ public class AttendingTicketUIModel {
         this.actionLabel = actionLabel;
     }
 
+    /**
+     * Returns the Firestore event identifier for the related event.
+     *
+     * @return Firestore event identifier.
+     */
     public String getEventId() {
         return eventId;
     }
 
+    /**
+     * Returns the title shown on the attending ticket card.
+     *
+     * @return Event title shown on the card.
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Returns the date string shown on the attending ticket card.
+     *
+     * @return Human-readable event date label.
+     */
     public String getDateLabel() {
         return dateLabel;
     }
 
+    /**
+     * Returns the location string shown on the attending ticket card.
+     *
+     * @return Human-readable location label.
+     */
     public String getLocationLabel() {
         return locationLabel;
     }
 
+    /**
+     * Returns the ticket-type label shown on the attending ticket card.
+     *
+     * @return Ticket-type summary label.
+     */
     public String getTicketTypeLabel() {
         return ticketTypeLabel;
     }
 
+    /**
+     * Returns the supporting note shown below the main card details.
+     *
+     * @return Supporting entry note.
+     */
     public String getEntryNote() {
         return entryNote;
     }
 
+    /**
+     * Returns the label describing the available card action.
+     *
+     * @return Action label shown on the card.
+     */
     public String getActionLabel() {
         return actionLabel;
     }

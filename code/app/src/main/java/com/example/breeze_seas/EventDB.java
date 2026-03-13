@@ -130,6 +130,7 @@ public class EventDB {
                 .addOnFailureListener(callback::onFailure);
     }
 
+    // Get event by id
     public static void getEventById(String eventId,LoadSingleEventCallback callback){
         setup();
         eventRef.document(eventId).get().
@@ -144,10 +145,24 @@ public class EventDB {
 
     }
 
+    // TODO: to implement
+    public void updateEvent(@NonNull Event event, @NonNull EventMutationCallback callback) {
+        db.collection("events")
+                .document(event.getId())
+                .set(event.toMap())
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onFailure);
+    }
 
+    // TODO: to implement
 
-
-    // Get event by id
+    public void deleteEvent(@NonNull String id, @NonNull EventMutationCallback callback) {
+        db.collection("events")
+                .document(id)
+                .delete()
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onFailure);
+    }
     public interface LoadSingleEventCallback {
         void onSuccess(Event event);
         void onFailure(Exception e);

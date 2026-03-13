@@ -2,6 +2,7 @@ package com.example.breeze_seas;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,8 +24,9 @@ import java.util.List;
  */
 public class ExploreFragment extends Fragment implements RecyclerViewClickListener {
 
-    private MaterialTextView noEventsTest;
-    private ExtendedFloatingActionButton scanQRCodeBtn;
+    private TextView noEventsTest;
+    private View filterBtn;
+    private View scanQRCodeBtn;
     private EventDB eventDBInstance;
     private List<Event> eventList;
     private SessionViewModel viewModel;
@@ -62,10 +64,15 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         // Bind views
         noEventsTest = view.findViewById(R.id.explore_no_events_found_text);
+        filterBtn = view.findViewById(R.id.explore_filter_button);
         scanQRCodeBtn = view.findViewById(R.id.explore_QRCode_floating_button);
+        filterBtn.setOnClickListener(v ->
+                ((MainActivity) requireActivity()).openSecondaryFragment(new FilterFragment())
+        );
         scanQRCodeBtn.setOnClickListener(v -> {
             // TODO: Bind QR Code Action
         });
@@ -79,7 +86,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
             @Override
             public void onFailure(Exception e) {
-                loadEvents(view, null);
+                eventList = null;
+                showNoEventsText(true);
             }
         });
     }

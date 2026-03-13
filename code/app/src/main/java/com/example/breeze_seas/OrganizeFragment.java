@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class OrganizeFragment extends Fragment {
 
@@ -127,9 +128,10 @@ public class OrganizeFragment extends Fragment {
             holder.tvName.setText(e.getName());
 
             SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.US);
-//            String from = sdf.format(new Date(e.getRegistrationStartDate()));
-//            String to = sdf.format(new Date(e.getRegistrationEndDate()));
-//            holder.tvDates.setText("Reg: " + from + " → " + to);
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String from = sdf.format(new Date(e.getRegistrationStartDate()));  // TODO: returns Timestamp
+            String to = sdf.format(new Date(e.getRegistrationEndDate()));  // TODO: returns Timestamp
+            holder.tvDates.setText("Reg: " + from + " → " + to);
 
             Integer cap = e.getWaitingListCapacity();
             holder.tvCap.setText(cap == null

@@ -22,6 +22,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class CreateEventFragment extends Fragment {
 
@@ -87,7 +88,12 @@ public class CreateEventFragment extends Fragment {
     private void openDateRangePicker() {
         MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder =
                 MaterialDatePicker.Builder.dateRangePicker()
+                        .setTheme(R.style.ThemeOverlay_Breezeseas_DateRangePicker)
                         .setTitleText("Select registration period");
+
+        if (regFromMillis != null && regToMillis != null) {
+            builder.setSelection(new androidx.core.util.Pair<>(regFromMillis, regToMillis));
+        }
 
         MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
 
@@ -97,6 +103,7 @@ public class CreateEventFragment extends Fragment {
             regToMillis = selection.second;
 
             SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.US);
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             etRegFrom.setText(sdf.format(new Date(regFromMillis)));
             etRegTo.setText(sdf.format(new Date(regToMillis)));
         });
@@ -129,6 +136,7 @@ public class CreateEventFragment extends Fragment {
             }
         }
 
+        // TODO: USE NEW EVENT CONSTRUCTOR
 //        Event event = new Event(
 //                "",
 //                name,
@@ -141,28 +149,27 @@ public class CreateEventFragment extends Fragment {
 //        );
 
         // TODO: FIX THIS
-//        EventDB.addEvent(event, new EventDB.AddEventCallback() {
-//            @Override
-//            public void onSuccess(String eventId) {
-//                Toast.makeText(requireContext(), "Event created", Toast.LENGTH_SHORT).show();
-//
-//                Bundle args = new Bundle();
-//                args.putString("eventId", eventId);
-//
-//                ViewQrCodeFragment fragment = new ViewQrCodeFragment();
-//                fragment.setArguments(args);
-//
-//                requireActivity().getSupportFragmentManager()
-//                        .beginTransaction()
-//                        .replace(R.id.fragment_container, fragment)
-//                        .addToBackStack(null)
-//                        .commit();
-//            }
-//
-//            @Override
-//            public void onFailure(Exception e) {
-//                Toast.makeText(requireContext(), "Failed to create event", Toast.LENGTH_SHORT).show();
-//            }
-//        });
+        EventDB.addEvent(event, new EventDB.AddEventCallback() {
+            @Override
+            public void onSuccess(String eventId) {
+                Toast.makeText(requireContext(), "Event created", Toast.LENGTH_SHORT).show();
+
+                Bundle args = new Bundle();
+                args.putString("eventId", eventId);
+
+                ViewQrCodeFragment fragment = new ViewQrCodeFragment();
+                fragment.setArguments(args);
+
+                requireActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .commit();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(), "Failed to create event", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
