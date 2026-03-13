@@ -1,15 +1,28 @@
 package com.example.breeze_seas;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AdminBrowseLogsFragment extends Fragment {
+
+    private AdminBrowseLogsAdapter adapter;
+    private final List<Notification> logList = new ArrayList<>();
+
+    private final NotificationService notificationService = new NotificationService();
+
     public AdminBrowseLogsFragment() { super(R.layout.fragment_admin_browse_logs); }
 
     @Override
@@ -21,6 +34,35 @@ public class AdminBrowseLogsFragment extends Fragment {
             requireActivity().getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new AdminDashboardFragment())
                     .commit();
+        });
+
+        RecyclerView recyclerView = view.findViewById(R.id.abl_rv_logs);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        adapter = new AdminBrowseLogsAdapter(logList);
+        recyclerView.setAdapter(adapter);
+
+        fetchLogs();
+    }
+
+    private void fetchLogs() {
+        notificationService.getAllNotifications(new NotificationService.OnNotificationLoadedListener() {
+            @Override
+            public void onNotificationLoaded(List<Notification> notifications) {
+                logList.clear();
+
+                if (notifications != null && !notifications.isEmpty()) {
+                    logList.addAll(notifications);
+                }
+
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("AdminLogs", "Failed to fetch logs", e);
+                Toast.makeText(getContext(), "Failed to load system logs", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 }
