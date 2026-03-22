@@ -42,6 +42,15 @@ public class EventDetailsFragment extends Fragment {
     private AcceptedList acceptedList;
     private DeclinedList declinedList;
     private User user;
+    private final androidx.activity.result.ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+
+                    joinWaitingListButton.performClick();
+                } else {
+                    Toast.makeText(requireContext(), "Location permission is required for this event.", Toast.LENGTH_LONG).show();
+                }
+            });
 
     public EventDetailsFragment () {
         super(R.layout.fragment_event_details);
@@ -105,19 +114,26 @@ public class EventDetailsFragment extends Fragment {
                         Toast.makeText(requireContext(), "The waiting list is full for this event.", Toast.LENGTH_SHORT).show();
                         return; // TODO: implement unable to join msg
                     }
-                            waitingList.addUser(user, new StatusList.ListUpdateListener() {
-                        @Override
-                        public void onUpdate() {
-                            showWaiting();
-                            updateView();
-                            refreshTickets();
-                        }
+                    if (androidx.core.app.ActivityCompat.checkSelfPermission(requireContext(),
+                            android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
 
-                        @Override
-                        public void onError(Exception e) {
-                            Log.e("waitingList DB Call", "Unable to add user to DB", e);
-                        }
-                    });
+
+                        waitingList.determineLocation(requireContext(), user, new StatusList.ListUpdateListener() {
+                            @Override
+                            public void onUpdate() {
+                                showWaiting();
+                                updateView();
+                                refreshTickets();
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e("waitingList DB Call", "Unable to add user", e);
+                            }
+                        });
+
+                    } else {
+                        requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+                    }
                 }
                 @Override
                 public void onError(Exception e) {
