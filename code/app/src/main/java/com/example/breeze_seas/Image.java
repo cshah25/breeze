@@ -64,15 +64,4 @@ public class Image {
     public void setImageData(Bitmap imageData) {
         this.imageData = imageData;
     }
-
-    /**
-     * Upload self to the database (only creates a document underneath images collection)
-     */
-    public void upload() {
-        // TODO: add or update the Image Document associated with ImageId
-        // TODO: if Image document does not exist, create it
-        // TODO: im Image document already exists, updates it
-        ;
-    }
-
 }
