@@ -90,6 +90,8 @@ public class OrganizerEventPreviewFragment extends Fragment {
 
         bindViews(view);
 
+        final View actionMenu = view.findViewById(R.id.organizer_event_preview_action_menu);
+
         view.findViewById(R.id.organizer_event_preview_back).setOnClickListener(new View.OnClickListener() {
             /**
              * Returns to the previous organizer screen.
@@ -99,6 +101,17 @@ public class OrganizerEventPreviewFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 requireActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
+        view.findViewById(R.id.organizer_event_preview_menu_button).setOnClickListener(new View.OnClickListener() {
+            /**
+             * Toggles the visibility of the compact organizer actions menu.
+             *
+             * @param v Menu button that was tapped.
+             */
+            @Override
+            public void onClick(View v) {
+                actionMenu.setVisibility(actionMenu.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             }
         });
 
@@ -161,6 +174,7 @@ public class OrganizerEventPreviewFragment extends Fragment {
              */
             @Override
             public void onClick(View v) {
+                actionMenu.setVisibility(View.GONE);
                 openManageEntrantsFragment();
             }
         });
@@ -172,6 +186,7 @@ public class OrganizerEventPreviewFragment extends Fragment {
              */
             @Override
             public void onClick(View v) {
+                actionMenu.setVisibility(View.GONE);
                 openAnnouncementFragment();
             }
         });
@@ -182,7 +197,10 @@ public class OrganizerEventPreviewFragment extends Fragment {
              * @param v View Map button that was tapped
              */
             @Override
-            public void onClick(View v){openMapFragment();}
+            public void onClick(View v){
+                actionMenu.setVisibility(View.GONE);
+                openMapFragment();
+            }
         });
 
         resolveAndLoadEvent();
