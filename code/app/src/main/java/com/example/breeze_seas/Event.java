@@ -7,6 +7,7 @@ import com.google.firebase.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Event stores the organizer-facing and entrant-facing metadata for a single event document.
@@ -201,7 +202,7 @@ public class Event {
         map.put("eventId", getEventId());
         map.put("isPrivate", isPrivate());
         map.put("organizerId", getOrganizerId());
-        // TODO: Need co-organizers here?
+        map.put("coOrganizerId", getCoOrganizerId());
         map.put("name", getName());
         map.put("description", getDescription());
         map.put("imageDocId", getImage().getImageId());
@@ -282,6 +283,43 @@ public class Event {
      */
     public void setCoOrganizerId(ArrayList<String> coOrganizerId) {
         this.coOrganizerId = coOrganizerId;
+    }
+
+    /**
+     * Returns a list of all user IDs that are any kind of organizers.
+     * @reutrn Arraylist of IDs
+     */
+    public ArrayList<String> getAllOrganizerId() {
+        ArrayList<String> allOrganizers = new ArrayList<String>(this.coOrganizerId);
+        allOrganizers.add(this.organizerId);
+        return allOrganizers;
+    }
+
+    /**
+     * Method to check if a user is the ORIGINAL organizer of the event
+     * @param user User object
+     * @return true is user is the ORIGINAL organizer of event, otherwise false
+     */
+    public boolean userIsOrganizer(User user) {
+        return Objects.equals(user.getDeviceId(), this.organizerId);
+    }
+
+    /**
+     * Method to check if a user is a co-organizer of the event
+     * @param user User object
+     * @return true is user is a co-organizer of event, otherwise false
+     */
+    public boolean userIsCoOrganizer(User user) {
+        return this.coOrganizerId.contains(user.getDeviceId());
+    }
+
+    /**
+     * Method to check if a user is any kind of organizer of the event
+     * @param user User object
+     * @return true is user is any kind of organizer of event, otherwise false
+     */
+    public boolean userIsAnOrganizer(User user) {
+        return getAllOrganizerId().contains(user.getDeviceId());
     }
 
     /**

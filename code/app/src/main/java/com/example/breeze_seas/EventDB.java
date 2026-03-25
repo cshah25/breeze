@@ -6,6 +6,7 @@ import android.util.Log;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.Filter;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -180,7 +181,7 @@ public class EventDB {
     }
 
     /**
-     * Fetch all events that the user is organizing
+     * Fetch all events that the user is organizing (any kind of organizer)
      * @param user User to check the id of organizers.
      * @param callback Callback method to run after firebase transaction.
      */
@@ -189,7 +190,47 @@ public class EventDB {
         // Get userID
         String userId = user.getDeviceId();
 
+        eventRef.where(Filter.or(
+                Filter.equalTo("organizerId", userId),
+                Filter.arrayContains("coOrganizerId", userId)))
+                .orderBy("registrationStartTimestamp")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    callback.onSuccess(fromMultiple(queryDocumentSnapshots));
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    /**
+     * Fetch all events that the user is organizing (the original organizer)
+     * @param user User to check the id of organizers.
+     * @param callback Callback method to run after firebase transaction.
+     */
+    public static void getAllEventsOrganizedByOrganizer(User user, LoadEventsCallback callback) {
+        setup();
+        // Get userID
+        String userId = user.getDeviceId();
+
         eventRef.whereEqualTo("organizerId", userId)
+                .orderBy("registrationStartTimestamp")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    callback.onSuccess(fromMultiple(queryDocumentSnapshots));
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    /**
+     * Fetch all events that the user is co-organizing.
+     * @param user User to check the id of organizers.
+     * @param callback Callback method to run after firebase transaction.
+     */
+    public static void getAllEventsOrganizedByCoOrganizer(User user, LoadEventsCallback callback) {
+        setup();
+        // Get userID
+        String userId = user.getDeviceId();
+
+        eventRef.whereArrayContains("coOrganizerId", userId)
                 .orderBy("registrationStartTimestamp")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
