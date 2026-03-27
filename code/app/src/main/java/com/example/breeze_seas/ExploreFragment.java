@@ -194,6 +194,26 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
     }
 
     /**
+     * Removes private events from the public Explore listing.
+     *
+     * @param events Events returned by {@link EventDB}, or {@code null}.
+     * @return Publicly visible events only.
+     */
+    private ArrayList<Event> filterPublicEvents(@Nullable ArrayList<Event> events) {
+        ArrayList<Event> publicEvents = new ArrayList<>();
+        if (events == null) {
+            return publicEvents;
+        }
+
+        for (Event event : events) {
+            if (event != null && !event.isPrivate()) {
+                publicEvents.add(event);
+            }
+        }
+        return publicEvents;
+    }
+
+    /**
      * Helper function to hide/show text when events are found or not
      * @param show Boolean value, true to display, false to hide
      */
