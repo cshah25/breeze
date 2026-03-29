@@ -2,10 +2,13 @@ package com.example.breeze_seas;
 
 import android.content.Context;
 
+import com.google.firebase.Firebase;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -23,6 +26,7 @@ public abstract class StatusList {
     protected ArrayList<User> userList;
     protected int capacity;
     protected Event event;
+    private ListenerRegistration listenerRegistration;
     protected com.google.firebase.firestore.GeoPoint tempLocation;
 
     /**
@@ -33,6 +37,64 @@ public abstract class StatusList {
         void onUpdate();
         void onError(Exception e);
     }
+
+    public void startListening(ListUpdateListener listener){
+        stopListening();
+        FirebaseFirestore db = DBConnector.getDb();
+        Query listRef = db.collection("events").document(event.getEventId())
+                .collection("participants").whereEqualTo("status",getStatusName());
+        this.listenerRegistration = listRef.addSnapshotListener((snapshot,error)->{
+            if (error != null) {
+                if (listener != null) {
+                    listener.onError(error);
+                }
+                return;
+            }
+
+
+            if (snapshot == null) {
+                return;
+            }
+
+
+            int totalChanges = snapshot.getDocumentChanges().size();
+            if (totalChanges == 0) {
+                if (listener != null) listener.onUpdate();
+                return;
+            }
+
+
+            final int[] fetched = {0};
+            for (DocumentChange change : snapshot.getDocumentChanges()) {
+                String deviceId = change.getDocument().getId();
+                switch (change.getType()) {
+                    case ADDED:
+                        fetchAndAddUser(deviceId, fetched, totalChanges, listener);
+                        break;
+                    case MODIFIED:
+                        popUser(deviceId);
+                        fetchAndAddUser(deviceId, fetched, totalChanges, listener);
+                        break;
+                    case REMOVED:
+                        popUser(deviceId);
+                        counter(fetched, totalChanges, listener);
+                        break;
+                }
+            }
+
+
+        });
+    }
+
+    public void stopListening(){
+        if (this.listenerRegistration != null) {
+            this.listenerRegistration.remove();
+            this.listenerRegistration = null;
+            this.userList.clear();
+        }
+    }
+
+
 
     /**
      * Constructor for StatusList.
@@ -54,11 +116,12 @@ public abstract class StatusList {
 
     protected abstract String getStatusName();
 
-    public void determineLocation(Context context, User user, ListUpdateListener listener){
-        tempLocation=null;
-        if(event.isGeolocationEnforced()){
+    public void determineLocation(Context context, User user, ListUpdateListener listener) {
+        this.tempLocation = null;
+        if (event.isGeolocationEnforced()) {
             com.google.android.gms.location.FusedLocationProviderClient client =
                     com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context);
+
 
             if (androidx.core.app.ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)
                     == android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -71,8 +134,10 @@ public abstract class StatusList {
                 }).addOnFailureListener(e->{
                     if(listener!=null) listener.onError(e);
                 });
-            }else {
-                if (listener != null) listener.onError(new Exception("Permission Denied"));
+            } else {
+                if (listener != null) {
+                    listener.onError(new Exception("Permission Denied"));
+                }
             }
         }
         else{
@@ -80,8 +145,8 @@ public abstract class StatusList {
             addUser(user, listener);
         }
 
-
     }
+
 
     /**
      * Adds a user to the event's participant sub-collection in Firestore.
@@ -99,6 +164,8 @@ public abstract class StatusList {
                 .document(user.getDeviceId());
 
 
+
+
         String status = getStatusName();
         Map<String, Object> update = new HashMap<>();
         update.put("deviceId",user.getDeviceId());
@@ -109,38 +176,11 @@ public abstract class StatusList {
         }
 
 
+
+
         participantRef.set(update, SetOptions.merge()) //update field if doc exists
                 .addOnSuccessListener(aVoid -> {
-                    if (!userList.contains(user)) {
-                        userList.add(user);
-                    }
-                    tempLocation = null;
-                    if (listener != null) listener.onUpdate();
-                })
-                .addOnFailureListener(e -> {
-                    if (listener != null) listener.onError(e);
-                });
-    }
-
-    /**
-     * Removes a user from the event's participant sub-collection in Firestore.
-     * @param user The {@link User} object to be added.
-     * @param listener Callback to handle success or failure of the DB operation.
-     */
-
-    public void removeUserFromDB(User user, ListUpdateListener listener) {
-        if (user == null || user.getDeviceId() == null) return;
-        FirebaseFirestore db=DBConnector.getDb();
-
-
-        DocumentReference participantRef = db.collection("events")
-                .document(event.getEventId())
-                .collection("participants")
-                .document(user.getDeviceId());
-
-        participantRef.delete()
-                .addOnSuccessListener(aVoid -> {
-                    userList.removeIf(u -> u.getDeviceId().equals(user.getDeviceId()));
+                    this.tempLocation = null;
                     if (listener != null) {
                         listener.onUpdate();
                     }
@@ -152,32 +192,54 @@ public abstract class StatusList {
                 });
     }
 
+    private void fetchAndAddUser(String deviceId, int[] fetched, int total, ListUpdateListener listener) {
+        DBConnector.getDb().collection("users")
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        User user = userDoc.toObject(User.class);
+                        if (user != null) {
+                            user.setDeviceId(userDoc.getId());
+                            if (!userIsInList(user)) {
+                                userList.add(user);
+                            }
+                        }
+                    }
+                    counter(fetched, total, listener);
+                })
+                .addOnFailureListener(e -> {
+                    counter(fetched, total, listener);
+                });
+    }
+
+
     /**
-     * Fetches new updates (new addition/deletions) from the event's participant
-     * sub-collection in Firestore to update the local list object.
+     * Removes a user from the event's participant sub-collection in Firestore.
+     * @param deviceId The deviceId of the User that is to be removed.
      * @param listener Callback to handle success or failure of the DB operation.
      */
 
-    public void refresh(ListUpdateListener listener) {
+    public void removeUserFromDB(String deviceId, ListUpdateListener listener) {
+        if (deviceId == null) return;
+
+
         FirebaseFirestore db = DBConnector.getDb();
-        db.collection("events")
+        DocumentReference participantRef = db.collection("events")
                 .document(event.getEventId())
                 .collection("participants")
-                .whereEqualTo("status", getStatusName())
-                //.orderBy("timeJoined", Query.Direction.ASCENDING) // TODO: THIS IS BREAKING THE QUERY
-                .get()
-                .addOnSuccessListener(participantDocs -> {
-                    userList.clear();
-                    if (participantDocs.isEmpty()) {
-                        if (listener != null) listener.onUpdate();
-                        return;
-                    }
-                    fetchFullUserDetails(participantDocs, listener);
+                .document(deviceId);
+
+
+        participantRef.delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (listener != null) listener.onUpdate();
                 })
                 .addOnFailureListener(e -> {
                     if (listener != null) listener.onError(e);
                 });
     }
+
 
     /**
      * Fetches detailed User objects for each participant ID found.

@@ -28,17 +28,64 @@ public class PendingListFragment extends Fragment {
     private SessionViewModel sessionViewModel;
     private Event currentEvent;
 
+    private final StatusList.ListUpdateListener liveListener = new StatusList.ListUpdateListener() {
+        @Override
+        public void onUpdate() {
+            if (isAdded()) {
+                waitingProgress.setVisibility(View.GONE);
+                adapter.notifyDataSetChanged();
+            }
+        }
+        @Override
+        public void onError(Exception e) {
+            if (isAdded()) {
+                waitingProgress.setVisibility(View.GONE);
+            }
+        }
+    };
 
     public PendingListFragment() { }
 
+    private void deleteDialog(User user){
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Remove Entrant")
+                .setMessage("Are you sure you want to remove " + user.getUserName() + " from the pending list?")
+                .setPositiveButton("Remove", (dialog, which) -> {
+
+
+                    waitingProgress.setVisibility(View.VISIBLE);
+                    pendingList.removeUserFromDB(user.getDeviceId(),null);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sessionViewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
         currentEvent = sessionViewModel.getEventShown().getValue();
+        if (currentEvent != null) {
+            pendingList = currentEvent.getPendingList();
+        }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (pendingList != null) {
+            waitingProgress.setVisibility(View.VISIBLE);
+            pendingList.startListening(liveListener);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (pendingList != null) {
+            pendingList.stopListening();
+        }
+    }
 
     @Nullable
     @Override
@@ -49,50 +96,22 @@ public class PendingListFragment extends Fragment {
         listView = view.findViewById(R.id.pending_frag_list_view);
         waitingProgress = view.findViewById(R.id.pending_list_spinner);
 
-
-        if (currentEvent != null) {
-            pendingList = new PendingList(currentEvent, currentEvent.getEventCapacity());
-            adapter = new OrganizerListAdapter(getContext(), R.layout.item_organizer_list, pendingList.getUserList(), "Pending", true);
+        if (pendingList != null) {
+            adapter = new OrganizerListAdapter(getContext(), R.layout.item_organizer_list,
+                    pendingList.getUserList(), "Pending", true);
             listView.setAdapter(adapter);
         }
-
 
         return view;
     }
 
-
     @Override
-    public void onResume() {
-        super.onResume();
-        refreshPendingList();
-    }
-
-
-    /**
-     * Rebuilds the pending list by fetching the latest participant data from Firestore.
-     * Toggles the visibility of the {@code waitingProgress} spinner during the update
-     * and refreshes the adapter upon success.
-     */
-
-    private void refreshPendingList() {
-        if (pendingList == null) return;
-        waitingProgress.setVisibility(View.VISIBLE);
-
-
-        pendingList.refresh(new StatusList.ListUpdateListener() {
-            @Override
-            public void onUpdate() {
-                if (isAdded()) {
-                    waitingProgress.setVisibility(View.GONE);
-                    adapter.notifyDataSetChanged();
-                }
-            }
-            @Override
-            public void onError(Exception e) {
-                if (isAdded()) {
-                    waitingProgress.setVisibility(View.GONE);
-                }
-            }
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState){
+        super.onViewCreated(view, savedInstanceState);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            User selected = pendingList.getUserList().get(position);
+            deleteDialog(selected);
         });
     }
+
 }

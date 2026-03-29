@@ -34,16 +34,32 @@ public class AcceptedListFragment extends Fragment {
     private SessionViewModel sessionViewModel;
     private Event currentEvent;
 
+    private final StatusList.ListUpdateListener liveListener = new StatusList.ListUpdateListener() {
+        @Override
+        public void onUpdate() {
+            if (isAdded()) {
+                waitingProgress.setVisibility(View.GONE);
+                adapter.notifyDataSetChanged();
+            }
+        }
+        @Override
+        public void onError(Exception e) {
+            if (isAdded()) {
+                waitingProgress.setVisibility(View.GONE);
+            }
+        }
+    };
+
 
     public AcceptedListFragment() {
     }
 
-    private final ActivityResultLauncher<Intent> csvLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-            Uri uri = result.getData().getData();
-            acceptedList.exportCsv(requireContext(), uri);
-        }
+    private final ActivityResultLauncher<Intent> csvLauncher = registerForActivityResult
+            (new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    acceptedList.exportCsv(requireContext(), uri);
+                }
     });
 
     private void onExportClick(){
@@ -59,8 +75,27 @@ public class AcceptedListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         sessionViewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
         currentEvent = sessionViewModel.getEventShown().getValue();
+        if (currentEvent != null) {
+            acceptedList = currentEvent.getAcceptedList();
+        }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (acceptedList != null) {
+            waitingProgress.setVisibility(View.VISIBLE);
+            acceptedList.startListening(liveListener);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (acceptedList != null) {
+            acceptedList.stopListening();
+        }
+    }
 
     @Nullable
     @Override
@@ -75,50 +110,13 @@ public class AcceptedListFragment extends Fragment {
             onExportClick();
         });
 
-
-        if (currentEvent != null) {
-            acceptedList = new AcceptedList(currentEvent, currentEvent.getEventCapacity());
-            adapter = new OrganizerListAdapter(getContext(), R.layout.item_organizer_list, acceptedList.getUserList(), "Accepted", false);
+        if (acceptedList != null) {
+            adapter = new OrganizerListAdapter(getContext(), R.layout.item_organizer_list,
+                    acceptedList.getUserList(), "Accepted", false);
             listView.setAdapter(adapter);
         }
-
 
         return view;
     }
 
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        refreshAcceptedList();
-    }
-
-    /**
-     * Rebuilds the accepted list by fetching the latest participant data from Firestore.
-     * Toggles the visibility of the {@code waitingProgress} spinner during the update
-     * and refreshes the adapter upon success.
-     */
-
-    private void refreshAcceptedList() {
-        if (acceptedList == null) return;
-        waitingProgress.setVisibility(View.VISIBLE);
-
-        acceptedList.refresh(new StatusList.ListUpdateListener() {
-            @Override
-            public void onUpdate() {
-                if (isAdded()) {
-                    waitingProgress.setVisibility(View.GONE);
-                    adapter.notifyDataSetChanged();
-                }
-            }
-
-
-            @Override
-            public void onError(Exception e) {
-                if (isAdded()) {
-                    waitingProgress.setVisibility(View.GONE);
-                }
-            }
-        });
-    }
 }
