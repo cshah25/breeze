@@ -67,7 +67,8 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
 
         // Setup EventHandler class if necessary
         if (!viewModel.exploreFragmentEventHandlerIsInitialized()) {
-            viewModel.setExploreFragmentEventHandler(new EventHandler(EventDB.getAllJoinableEventsQuery(user)));
+            viewModel.setExploreFragmentEventHandler(new EventHandler(getContext().getApplicationContext(),
+                    EventDB.getAllJoinableEventsQuery(user)));
         }
         // Grab reference
         exploreEventHandler = viewModel.getExploreFragmentEventHandler();
@@ -130,7 +131,7 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
                 };
 
                 // New keyword search
-                mhandler.postDelayed(keywordRunnable, 350);  // DEBOUNCE of 0.35 seconds.
+                mhandler.postDelayed(keywordRunnable, 300);  // DEBOUNCE of 0.3 seconds.
             }
         });
     }
