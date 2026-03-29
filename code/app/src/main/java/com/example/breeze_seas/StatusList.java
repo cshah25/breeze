@@ -136,6 +136,12 @@ public abstract class StatusList {
      */
     public void determineLocation(Context context, User user, ListUpdateListener listener) {
         this.tempLocation = null;
+        if (event.getCoOrganizerId() != null && event.getCoOrganizerId().contains(user.getDeviceId())) {
+            if (listener != null) {
+                listener.onError(new Exception("Co-Organizers cannot join the event as participants."));
+            }
+            return;
+        }
         if (event.isGeolocationEnforced()) {
             com.google.android.gms.location.FusedLocationProviderClient client =
                     com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context);
