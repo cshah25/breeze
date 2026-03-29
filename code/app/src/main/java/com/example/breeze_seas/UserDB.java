@@ -4,10 +4,12 @@ import android.util.Log;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,18 +79,52 @@ public class UserDB {
                         Log.e("DB", "Update failed", e));
     }
 
+
+
     /**
-     * Deletes a user document from the "User" collection.
+     * Deletes a user document from the "User" collection and the documents of
+     * all the events they are an organizer for.
      *
      * @param deviceId The unique identifier of the user to be deleted.
      */
     public void deleteUser(String deviceId) {
-        userRef.document(deviceId).delete()
-                .addOnSuccessListener(aVoid ->
-                        Log.d("DB_UPDATE", "User deleted successfully"))
-                .addOnFailureListener(e ->
-                        Log.e("DB_UPDATE", "Deletion failed", e));
+        getUser(deviceId, new OnUserLoadedListener() {
+            @Override
+            public void onUserLoaded(User user) {
+                EventDB.getAllEventsOrganizedByUser(user, new EventDB.LoadEventsCallback() {
+                    @Override
+                    public void onSuccess(ArrayList<Event> events) {
+                        WriteBatch batch = FirebaseFirestore.getInstance().batch();
+                        for (Event event : events) {
+                            DocumentReference eventRef = db.
+                                    collection("events").document(event.getEventId());
+                            batch.delete(eventRef);
+                        }
+                        DocumentReference userDocumentRef = userRef.document(deviceId);
+                        batch.delete(userDocumentRef);
+                        batch.commit()
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d("DB_UPDATE", "User and all associated " +
+                                            "events deleted successfully.");
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("DB_UPDATE", "Deletion failed." +
+                                            " No data was removed.", e);
+                                });
+                    }
 
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e("DB_UPDATE", "Failed to load user events", e);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("DB_UPDATE", "Failed to load user", e);
+            }
+        });
     }
 
     /**
