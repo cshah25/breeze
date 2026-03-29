@@ -63,7 +63,15 @@ public class AcceptedListFragment extends Fragment {
     });
 
     private void onExportClick(){
-        Intent intent= new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        if (acceptedList == null || acceptedList.getUserList().isEmpty()) {
+            if (isAdded()) {
+                android.widget.Toast.makeText(getContext(),
+                        "Cannot export: No users have accepted the invitation yet.",
+                        android.widget.Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/csv");
         csvLauncher.launch(intent);

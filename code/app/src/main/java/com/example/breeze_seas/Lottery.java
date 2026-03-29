@@ -62,9 +62,10 @@ public class Lottery {
     public void onRunLottery(StatusList.ListUpdateListener finalListener) {
 
         List<User> pool = waitingList.getUserList();
-        if (pool.isEmpty()) {
+
+        if (pool==null || pool.isEmpty()) {
             if (finalListener != null) {
-                finalListener.onUpdate();
+                finalListener.onError(new Exception("Cannot run lottery: The waiting list is empty."));
             }
             return;
         }
