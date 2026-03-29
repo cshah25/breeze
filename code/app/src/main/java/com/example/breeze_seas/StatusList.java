@@ -51,18 +51,15 @@ public abstract class StatusList {
                 return;
             }
 
-
             if (snapshot == null) {
                 return;
             }
-
 
             int totalChanges = snapshot.getDocumentChanges().size();
             if (totalChanges == 0) {
                 if (listener != null) listener.onUpdate();
                 return;
             }
-
 
             final int[] fetched = {0};
             for (DocumentChange change : snapshot.getDocumentChanges()) {
@@ -81,8 +78,6 @@ public abstract class StatusList {
                         break;
                 }
             }
-
-
         });
     }
 
@@ -93,7 +88,6 @@ public abstract class StatusList {
             this.userList.clear();
         }
     }
-
 
 
     /**
@@ -156,27 +150,26 @@ public abstract class StatusList {
      */
 
     public void addUser(User user,ListUpdateListener listener) {
-        if (user == null || user.getDeviceId() == null) return;
+        if (user == null || user.getDeviceId() == null) {
+            return;
+        }
         FirebaseFirestore db = DBConnector.getDb();
         DocumentReference participantRef = db.collection("events")
                 .document(event.getEventId())
                 .collection("participants")
                 .document(user.getDeviceId());
 
-
-
-
         String status = getStatusName();
         Map<String, Object> update = new HashMap<>();
         update.put("deviceId",user.getDeviceId());
         update.put("status", status);
-        update.put("timeJoined", FieldValue.serverTimestamp());
-        if (tempLocation != null) {
-            update.put("location", tempLocation);
+
+        if (getStatusName().equals("waiting")) {
+            update.put("timeJoined", FieldValue.serverTimestamp());
+            if (tempLocation != null) {
+                update.put("location", tempLocation);
+            }
         }
-
-
-
 
         participantRef.set(update, SetOptions.merge()) //update field if doc exists
                 .addOnSuccessListener(aVoid -> {
@@ -223,13 +216,11 @@ public abstract class StatusList {
     public void removeUserFromDB(String deviceId, ListUpdateListener listener) {
         if (deviceId == null) return;
 
-
         FirebaseFirestore db = DBConnector.getDb();
         DocumentReference participantRef = db.collection("events")
                 .document(event.getEventId())
                 .collection("participants")
                 .document(deviceId);
-
 
         participantRef.delete()
                 .addOnSuccessListener(aVoid -> {

@@ -2,7 +2,9 @@ package com.example.breeze_seas;
 
 import static android.preference.PreferenceManager.*;
 
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -69,6 +71,13 @@ public class MapsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view,savedInstanceState);
+        view.findViewById(R.id.maps_back_button).setOnClickListener(v ->
+                requireActivity().getSupportFragmentManager().popBackStack()
+        );
+        TextView subtitleView = view.findViewById(R.id.maps_subtitle);
+        if (currentEvent != null && currentEvent.getName() != null && !currentEvent.getName().trim().isEmpty()) {
+            subtitleView.setText(currentEvent.getName());
+        }
         mapObj = new Map(currentEvent);
         mapObj.fetchLocation(new Map.FetchedLocationListener() {
             @Override
@@ -87,19 +96,31 @@ public class MapsFragment extends Fragment {
         });
     }
 
+    public BitmapDrawable getMarker(int vectorId, int color, int size){
+        Drawable drawable= androidx.core.content.ContextCompat.getDrawable(requireContext(), vectorId);
+        if (drawable == null) {
+            return null;
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+
+        drawable = androidx.core.graphics.drawable.DrawableCompat.wrap(drawable).mutate();
+        androidx.core.graphics.drawable.DrawableCompat.setTint(drawable, color);
+        drawable.setBounds(0, 0, size, size);
+        drawable.draw(canvas);
+
+        return new BitmapDrawable(getResources(), bitmap);
+    }
+
     public void drawPoints(HashMap<GeoPoint,String[]> locations){
         map.getOverlays().clear();
+        int iconSize = 150;
         for(java.util.Map.Entry<GeoPoint, String[]> entry: locations.entrySet()){
 
             GeoPoint point = entry.getKey();
             String username = entry.getValue()[0];
             String status = entry.getValue()[1];
-
-            Marker marker = new Marker(map);
-            marker.setPosition(point);
-            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marker.setTitle(username);
-            marker.setSnippet("Status: " + status);
 
             int color = Color.GRAY;
             if (status != null) {
@@ -111,17 +132,18 @@ public class MapsFragment extends Fragment {
                         color = Color.BLUE;
                         break;
                     case "pending":
-                        color = Color.YELLOW;
+                        color = Color.RED;
                         break;
                 }
             }
 
-            Drawable defaultMarker = marker.getIcon();
-            if (defaultMarker != null) {
-                Drawable tintedIcon = DrawableCompat.wrap(defaultMarker).mutate();
-                DrawableCompat.setTint(tintedIcon, color);
-                marker.setIcon(tintedIcon);
-            }
+            Marker marker = new Marker(map);
+            marker.setPosition(point);
+            marker.setIcon(getMarker(R.drawable.map_pointer, color, iconSize));
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+
+            marker.setTitle(username);
+            marker.setSnippet("Status: " + status);
             map.getOverlays().add(marker);
         }
         if (!locations.isEmpty()) {
