@@ -44,7 +44,6 @@ public class AdminBrowseImagesFragment extends Fragment {
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
         adapter = new AdminBrowseImagesAdapter(new ArrayList<>(), image -> {
-            // Deletion is confirmed by the listener — toast shows in the observer once removed
             adminViewModel.deleteImage(image, new ImageDB.ImageMutationCallback() {
                 @Override
                 public void onSuccess() { }
@@ -60,17 +59,15 @@ public class AdminBrowseImagesFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        // Observe the live list — updates arrive via the real-time listener in AdminViewModel
         adminViewModel.getImages().observe(getViewLifecycleOwner(), images -> {
             int previousCount = adapter.getItemCount();
             adapter.setImages(images);
-            // Show a toast when an image is removed (size shrinks by 1)
             if (images.size() < previousCount) {
                 Toast.makeText(getContext(), "Image deleted", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Start listening — safe to call if already running
+        // Start listening
         adminViewModel.startImagesListen();
     }
 }

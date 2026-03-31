@@ -42,7 +42,7 @@ public class AdminBrowseImagesAdapter extends RecyclerView.Adapter<AdminBrowseIm
         Image image = imageList.get(position);
 
         if (image.getImageData() != null) {
-            // Clear the tint that's on the placeholder — it would wash over the bitmap otherwise
+            // Clear the tint to show image
             holder.ivImage.setImageTintList(null);
             holder.ivImage.setImageBitmap(image.getImageData());
         } else {
