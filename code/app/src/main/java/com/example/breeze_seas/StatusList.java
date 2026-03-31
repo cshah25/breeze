@@ -267,47 +267,6 @@ public abstract class StatusList {
 
 
     /**
-     * Promotes a participant to a co-organizer.
-     * Uses a WriteBatch to ensure the user is added to the event's co-organizer array
-     * and removed from the participant list at the exact same time.
-     * @param deviceId The ID of the user to promote.
-     * @param listener Callback for result.
-     */
-    public void promoteUser(String deviceId, ListUpdateListener listener) {
-        if (deviceId == null) {
-            return;
-        }
-
-        FirebaseFirestore db = DBConnector.getDb();
-        DocumentReference eventRef = db.collection("events").document(event.getEventId());
-        DocumentReference participantRef = eventRef.collection("participants").document(deviceId);
-
-        WriteBatch batch = db.batch();
-        // Add ID to co-organizers array in main Event doc
-        batch.update(eventRef, "coOrganizerId", FieldValue.arrayUnion(deviceId));
-        // Remove participant document from the sub-collection
-        batch.delete(participantRef);
-
-        batch.commit()
-                .addOnSuccessListener(aVoid -> {
-                    if (event.getCoOrganizerId() == null) {
-                        event.setCoOrganizerId(new ArrayList<>());
-                    }
-                    if (!event.getCoOrganizerId().contains(deviceId)) {
-                        event.getCoOrganizerId().add(deviceId);
-                    }
-
-                    if (listener != null) {
-                        listener.onUpdate();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (listener != null) listener.onError(e);
-                });
-    }
-
-
-    /**
      * Counter for synchronizing parallel Firestore calls.
      * @param count Array containing the current completion count.
      * @param total Total number of operations expected.
