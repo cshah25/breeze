@@ -21,10 +21,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
@@ -38,6 +38,7 @@ public class ScanFragment extends Fragment {
 
     private PreviewView previewView;
     private SessionViewModel sessionViewModel;
+    private boolean isProcessingScan = false;
 
     // Camera set up
     private final ActivityResultLauncher<String> requestPermissionLauncher =
@@ -105,6 +106,12 @@ public class ScanFragment extends Fragment {
                 imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(requireContext()), imageProxy -> {
                     @SuppressWarnings("UnsafeOptInUsageError")
                     android.media.Image mediaImage = imageProxy.getImage();
+
+                    // Ignore this frame if we are progressing a scan
+                    if (isProcessingScan) {
+                        imageProxy.close();
+                        return;
+                    }
                     if (mediaImage != null) {
                         InputImage image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
 
@@ -113,24 +120,70 @@ public class ScanFragment extends Fragment {
                                     for (Barcode barcode : barcodes) {
                                         String rawValue = barcode.getRawValue();
                                         if (rawValue != null) {
-                                            // Get the event correspending to the scanned code
+                                            isProcessingScan = true;
+
+                                            // Get the event corresponding to the scanned code
                                             String eventId = rawValue.replace("event:", "");
                                             EventDB.getEventById(eventId, new EventDB.LoadSingleEventCallback() {
                                                 @Override
                                                 public void onSuccess(Event event) {
+
+                                                    imageAnalysis.clearAnalyzer();
+
+                                                    // Check if the barcode is invalid
+                                                    if (event == null) {
+                                                        Log.e("SCAN_ERROR", "Event does not exist.");
+                                                        new MaterialAlertDialogBuilder(requireContext())
+                                                                .setTitle("Failure")
+                                                                .setMessage("Invalid QR Code: Event not found")
+                                                                .setPositiveButton("OK", (dialog, which) -> {
+                                                                    // Open Explore Fragment
+                                                                    getActivity().getSupportFragmentManager()
+                                                                            .beginTransaction()
+                                                                            .replace(R.id.fragment_container, new ExploreFragment())
+                                                                            .addToBackStack(null)
+                                                                            .commit();
+                                                                })
+                                                                .show();
+
+                                                        return;
+                                                    }
+
+                                                    // Check if the registration date is over
+                                                    long currentTime = System.currentTimeMillis();
+                                                    long eventEndTime = event.getRegistrationEndTimestamp()
+                                                            .toDate().getTime();
+                                                    if (currentTime > eventEndTime) {
+                                                        Log.e("SCAN_ERROR", "Registration period has ended.");
+                                                        new MaterialAlertDialogBuilder(requireContext())
+                                                                .setTitle("Failure")
+                                                                .setMessage("Registration period for this event is closed!")
+                                                                .setPositiveButton("OK", (dialog, which) -> {
+                                                                    // Open Explore Fragment
+                                                                    getActivity().getSupportFragmentManager()
+                                                                            .beginTransaction()
+                                                                            .replace(R.id.fragment_container, new ExploreFragment())
+                                                                            .addToBackStack(null)
+                                                                            .commit();
+                                                                })
+                                                                .show();
+
+                                                        return;
+                                                    }
+
                                                     // Initialize the session view model
                                                     sessionViewModel = new ViewModelProvider(requireActivity())
                                                             .get(SessionViewModel.class);
                                                     sessionViewModel.setEventShown(event);
 
-                                                    // Stop analyzing to prevent multiple scans
-                                                    imageAnalysis.clearAnalyzer();
+                                                    // Make the bottom navigation visible again
+                                                    ((MainActivity) getActivity()).showBottomNav(true);
 
                                                     // Open Event Details Fragment
                                                     getActivity().getSupportFragmentManager()
                                                             .beginTransaction()
                                                             .replace(R.id.fragment_container, new EventDetailsFragment())
-                                                            .addToBackStack(null)
+                                                            .addToBackStack("Scan QR Code")
                                                             .commit();
                                                 }
 

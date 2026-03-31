@@ -168,11 +168,6 @@ public class EventDetailsFragment extends Fragment {
         returnButton.setOnClickListener(v -> {
             getParentFragmentManager()
                    .popBackStack();
-            /*getActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new EventDetailsFragment())
-                    .addToBackStack(null)
-                    .commit(); */
 
         });
 
