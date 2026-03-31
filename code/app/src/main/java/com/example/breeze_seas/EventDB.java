@@ -188,19 +188,6 @@ public class EventDB {
         }
     }
 
-    /**
-     * helper method to add participants to database
-     * @param event event class that contains the participants
-     */
-    private static void addParticipants(Event event) {
-        // Mange all list classes
-        WaitingList waitingList = event.getWaitingList();
-        PendingList pendingList = event.getPendingList();
-        AcceptedList acceptedList = event.getAcceptedList();
-        DeclinedList declinedList = event.getDeclinedList();
-
-    }
-
     // Get event by id
     public interface LoadSingleEventCallback {
         void onSuccess(Event event);
