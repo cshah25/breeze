@@ -10,31 +10,28 @@ import java.util.List;
  * ViewModel for admin screens.
  *
  * <p>A separate ViewModel from {@link SessionViewModel} because admin data (images, events,
- * profiles) has a different ownership and lifetime than the current-user session state.
- * Mixing them into SessionViewModel would make it responsible for too many unrelated things
- * and would leave Firestore listeners running even when the user is not in the admin section.</p>
+ * profiles) is unrelated to the current-user session state. Keeping them together would give
+ * SessionViewModel too many responsibilities.</p>
  *
- * <p>This ViewModel is scoped to the activity, so admin data and listeners persist across
- * admin fragment navigation (e.g. going into an image detail screen and coming back) without
- * requiring a re-fetch. Listeners are started on first use and stopped when the ViewModel
- * is cleared (i.e. when the activity finishes).</p>
+ * <p>This ViewModel is scoped to the activity. Listeners are started only when an
+ * admin browse screen is first opened and remain active for the rest of the activity's
+ * lifetime, even when the user navigates away from admin screens. This means data stays fresh
+ * and no re-fetch is needed when returning to an admin screen. Listeners are only stopped
+ * when the activity finishes and {@link #onCleared()} is called.</p>
  */
 public class AdminViewModel extends ViewModel {
+
+    // Images
 
     private final MutableLiveData<List<Image>> images = new MutableLiveData<>(new ArrayList<>());
     private boolean imagesListening = false;
 
-    /**
-     * Returns the live image list. Observe this in admin image fragments.
-     */
+    /** Returns the live image list. */
     public MutableLiveData<List<Image>> getImages() {
         return images;
     }
 
-    /**
-     * Starts the real-time listener for the images collection if not already running.
-     * Safe to call multiple times — only attaches once.
-     */
+    /** Starts the realtime images listener if not already running. */
     public void startImagesListen() {
         if (imagesListening) return;
         imagesListening = true;
@@ -68,27 +65,141 @@ public class AdminViewModel extends ViewModel {
 
             @Override
             public void onFailure(Exception e) {
-                // Leave the existing list in place — transient errors shouldn't wipe the UI
+
             }
         });
     }
 
     /**
-     * Deletes an image from Firestore. The listener will automatically remove it from
-     * the live list once Firestore confirms the deletion.
-     *
-     * @param image The image to delete.
-     * @param callback Fired on success or failure.
+     * Deletes an image from Firestore. The listener removes it from the live list automatically.
      */
     public void deleteImage(Image image, ImageDB.ImageMutationCallback callback) {
         ImageDB.deleteImage(image.getImageId(), callback);
     }
 
+    // Events
+
+    private final MutableLiveData<List<Event>> events = new MutableLiveData<>(new ArrayList<>());
+    private boolean eventsListening = false;
+
+    /** Returns the live event list. */
+    public MutableLiveData<List<Event>> getEvents() {
+        return events;
+    }
+
+    /** Starts the realtime events listener if not already running. */
+    public void startEventsListen() {
+        if (eventsListening) return;
+        eventsListening = true;
+
+        EventDB.startEventsListen(new EventDB.EventsChangedCallback() {
+            @Override
+            public void onEventAdded(Event event) {
+                List<Event> current = events.getValue();
+                current.add(event);
+                events.setValue(current);
+            }
+
+            @Override
+            public void onEventModified(Event event) {
+                List<Event> current = events.getValue();
+                for (int i = 0; i < current.size(); i++) {
+                    if (event.getEventId().equals(current.get(i).getEventId())) {
+                        current.set(i, event);
+                        break;
+                    }
+                }
+                events.setValue(current);
+            }
+
+            @Override
+            public void onEventRemoved(Event event) {
+                List<Event> current = events.getValue();
+                current.removeIf(e -> e.getEventId().equals(event.getEventId()));
+                events.setValue(current);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+
+            }
+        });
+    }
+
+    /**
+     * Deletes an event and its participants subcollection from Firestore.
+     * The listener removes it from the live list automatically once confirmed.
+     */
+    public void deleteEvent(Event event, EventDB.EventMutationCallback callback) {
+        EventDB.deleteEvent(event, callback);
+    }
+
+    // Users
+
+    private final MutableLiveData<List<User>> users = new MutableLiveData<>(new ArrayList<>());
+    private boolean usersListening = false;
+    private UserDB userDB;
+
+    /** Returns the live user list. */
+    public MutableLiveData<List<User>> getUsers() {
+        return users;
+    }
+
+    /** Starts the realtime users listener if not already running. */
+    public void startUsersListen() {
+        if (usersListening) return;
+        usersListening = true;
+        userDB = new UserDB();
+
+        userDB.startUsersListen(new UserDB.UsersChangedCallback() {
+            @Override
+            public void onUserAdded(User user) {
+                List<User> current = users.getValue();
+                current.add(user);
+                users.setValue(current);
+            }
+
+            @Override
+            public void onUserModified(User user) {
+                List<User> current = users.getValue();
+                for (int i = 0; i < current.size(); i++) {
+                    if (user.getDeviceId().equals(current.get(i).getDeviceId())) {
+                        current.set(i, user);
+                        break;
+                    }
+                }
+                users.setValue(current);
+            }
+
+            @Override
+            public void onUserRemoved(User user) {
+                List<User> current = users.getValue();
+                current.removeIf(u -> u.getDeviceId().equals(user.getDeviceId()));
+                users.setValue(current);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+
+            }
+        });
+    }
+
+    /**
+     * Deletes a user and all associated data from Firestore.
+     * The listener removes them from the live list automatically once confirmed.
+     */
+    public void deleteUser(String deviceId) {
+        if (userDB != null) {
+            userDB.deleteUser(deviceId);
+        }
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();
-        // Stop the listener when the activity is finished to avoid leaks
         ImageDB.stopImagesListen();
-        imagesListening = false;
+        EventDB.stopEventsListen();
+        if (userDB != null) userDB.stopUsersListen();
     }
 }
