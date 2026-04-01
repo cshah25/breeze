@@ -70,7 +70,7 @@ public class NotificationFragment extends Fragment {
                                     adapter.notifyDataSetChanged();
                                 });
                     })
-                    .setNegativeButton("Decline", (dialog, which) -> {
+                    .setNegativeButton("Dismiss", (dialog, which) -> {
                         dialog.dismiss();
                     })
                     .show();

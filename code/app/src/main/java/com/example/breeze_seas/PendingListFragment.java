@@ -32,9 +32,9 @@ public class PendingListFragment extends Fragment {
         @Override
         public void onUpdate() {
             if (isAdded()) {
-                if (!pendingList.getUserList().isEmpty()) {
-                    waitingProgress.setVisibility(View.GONE);
-                }
+
+                waitingProgress.setVisibility(View.GONE);
+
                 adapter.notifyDataSetChanged();
             }
         }
