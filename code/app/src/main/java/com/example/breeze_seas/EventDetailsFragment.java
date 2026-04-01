@@ -99,8 +99,6 @@ public class EventDetailsFragment extends Fragment {
       
         exploreViewModel = new ViewModelProvider(requireActivity()).get(ExploreViewModel.class);
         eventShown = exploreViewModel.getEventHandler().getEventShown().getValue();
-        assert eventShown != null;
-        eventShown.startListenAllLists(liveListener);  // Start participants listeners
 
         // Get the transaction sitting directly behind the current fragment
         FragmentManager fm = getParentFragmentManager();
@@ -113,11 +111,21 @@ public class EventDetailsFragment extends Fragment {
             eventShown = viewModel.getEventShown().getValue();
         }
 
+        // Make sure event is valid.
+        assert eventShown != null;
+
         // Grab references to list classes
         waitingList = eventShown.getWaitingList();
         pendingList = eventShown.getPendingList();
         acceptedList = eventShown.getAcceptedList();
         declinedList = eventShown.getDeclinedList();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Start participants listeners
+        eventShown.startListenAllLists(liveListener);
     }
 
     @Override
