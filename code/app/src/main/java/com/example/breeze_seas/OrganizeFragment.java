@@ -19,7 +19,6 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
@@ -340,9 +339,10 @@ public class OrganizeFragment extends Fragment {
             holder.tvCap.setText(cap == null || cap < 0
                     ? "Waiting list cap: Unlimited"
                     : "Waiting list cap: " + cap);
-            holder.tvDetails.setText(e.getDescription().trim().isEmpty()
+            String description = e.getDescription() == null ? "" : e.getDescription();
+            holder.tvDetails.setText(description.trim().isEmpty()
                     ? holder.itemView.getContext().getString(R.string.organize_event_no_description)
-                    : e.getDescription());
+                    : description);
             holder.tvAction.setText(R.string.organize_event_open_preview);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 /**
@@ -376,6 +376,9 @@ public class OrganizeFragment extends Fragment {
          */
         @NonNull
         private String formatTimestamp(@NonNull SimpleDateFormat sdf, @Nullable Timestamp timestamp) {
+            if (timestamp == null) {
+                return "Not set";
+            }
             return sdf.format(new Date(timestamp.toDate().getTime()));
         }
     }
