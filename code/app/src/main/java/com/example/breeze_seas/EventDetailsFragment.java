@@ -95,27 +95,13 @@ public class EventDetailsFragment extends Fragment {
             // would no longer be consistent with the database.
             // Thus, the best course of action is to leave the page.
             // Unassign eventShown
-            exploreViewModel.getExploreFragmentEventHandler().setEventShown(null);
+            exploreViewModel.getEventHandler().setEventShown(null);
 
             // Return to explore fragment
             getParentFragmentManager()
                     .popBackStack();
         }
     };
-
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        eventShown.startListenAllLists(liveListener);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        eventShown.stopListenAllLists();
-    }
-
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -128,8 +114,7 @@ public class EventDetailsFragment extends Fragment {
         user = viewModel.getUser().getValue();
       
         exploreViewModel = new ViewModelProvider(requireActivity()).get(ExploreViewModel.class);
-        eventShown = exploreViewModel.getExploreFragmentEventHandler().getEventShown().getValue();
-        assert eventShown != null;
+        eventShown = exploreViewModel.getEventHandler().getEventShown().getValue();
 
         // Get the transaction sitting directly behind the current fragment
         FragmentManager fm = getParentFragmentManager();
@@ -142,11 +127,27 @@ public class EventDetailsFragment extends Fragment {
             eventShown = viewModel.getEventShown().getValue();
         }
 
+        // Make sure event is valid.
+        assert eventShown != null;
+
         // Grab references to list classes
         waitingList = eventShown.getWaitingList();
         pendingList = eventShown.getPendingList();
         acceptedList = eventShown.getAcceptedList();
         declinedList = eventShown.getDeclinedList();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Start participants listeners
+        eventShown.startListenAllLists(liveListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        eventShown.stopListenAllLists();
     }
 
 
@@ -155,7 +156,7 @@ public class EventDetailsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Setup observer on eventShown
-        exploreViewModel.getExploreFragmentEventHandler()
+        exploreViewModel.getEventHandler()
                 .getEventShown().observe(getViewLifecycleOwner(), e -> {
                     // Check if event still exists
                     if (e == null) {
