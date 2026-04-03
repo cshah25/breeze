@@ -43,10 +43,16 @@ public class TicketDBDataFlowTest {
         resetTicketDbState();
     }
 
+    /**
+     * Verifies that an accepted participant row with matching event metadata is classified
+     * into the Attending tab and mapped into the expected attending ticket fields.
+     *
+     * @throws Exception When reflection-based cache setup fails.
+     */
     @Test
     public void recomputeTicketsFromRealtimeCache_acceptedParticipantCreatesAttendingTicket() throws Exception {
-        Timestamp eventStart = new Timestamp(new Date(1730502000000L)); // Sat, Nov 2 2024 5:00 PM UTC
-        Timestamp timeJoined = new Timestamp(new Date(1730415600000L));
+        Timestamp eventStart = new Timestamp(new Date(1893459600000L)); // Tue, Jan 1 2030 5:00 PM UTC
+        Timestamp timeJoined = new Timestamp(new Date(1893373200000L));
 
         DocumentSnapshot eventDocument = mock(DocumentSnapshot.class);
         when(eventDocument.exists()).thenReturn(true);
@@ -54,7 +60,7 @@ public class TicketDBDataFlowTest {
         when(eventDocument.getString("name")).thenReturn("City Concert");
         when(eventDocument.getString("location")).thenReturn("Main Hall");
         when(eventDocument.getBoolean("isPrivate")).thenReturn(false);
-        when(eventDocument.getTimestamp("eventStartDate")).thenReturn(eventStart);
+        when(eventDocument.getTimestamp("eventStartTimestamp")).thenReturn(eventStart);
 
         putIntoPrivateMap("participantEntries", "event-123",
                 newParticipantEntry("event-123", "accepted", timeJoined));
@@ -78,9 +84,39 @@ public class TicketDBDataFlowTest {
         assertEquals("Show this ticket during event check-in.", attendingTicket.getEntryNote());
         assertEquals("Open QR pass", attendingTicket.getActionLabel());
         assertEquals(
-                new SimpleDateFormat("EEE, MMM d • h:mm a", Locale.US).format(eventStart.toDate()),
+                EventMetadataUtils.formatDateTime(eventStart),
                 attendingTicket.getDateLabel()
         );
+    }
+
+    /**
+     * Verifies that unsupported participant statuses are ignored instead of being classified
+     * into the Active, Attending, or Past tab lists.
+     *
+     * @throws Exception When reflection-based cache setup fails.
+     */
+    @Test
+    public void recomputeTicketsFromRealtimeCache_unknownStatusAddsNoTickets() throws Exception {
+        Timestamp eventStart = new Timestamp(new Date(1730502000000L));
+        Timestamp timeJoined = new Timestamp(new Date(1730415600000L));
+
+        DocumentSnapshot eventDocument = mock(DocumentSnapshot.class);
+        when(eventDocument.exists()).thenReturn(true);
+        when(eventDocument.getId()).thenReturn("event-unknown");
+        when(eventDocument.getString("name")).thenReturn("Unknown Status Event");
+        when(eventDocument.getString("location")).thenReturn("Studio 2");
+        when(eventDocument.getBoolean("isPrivate")).thenReturn(false);
+        when(eventDocument.getTimestamp("eventStartDate")).thenReturn(eventStart);
+
+        putIntoPrivateMap("participantEntries", "event-unknown",
+                newParticipantEntry("event-unknown", "mystery_status", timeJoined));
+        putIntoPrivateMap("eventSnapshots", "event-unknown", eventDocument);
+
+        invokePrivateMethod("recomputeTicketsFromRealtimeCache");
+
+        assertTrue(ticketDb.getActiveTickets().isEmpty());
+        assertTrue(ticketDb.getAttendingTickets().isEmpty());
+        assertTrue(ticketDb.getPastTickets().isEmpty());
     }
 
     private void resetTicketDbState() throws Exception {
