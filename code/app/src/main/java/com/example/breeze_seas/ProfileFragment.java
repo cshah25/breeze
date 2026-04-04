@@ -37,6 +37,8 @@ import java.util.Map;
  * TODO: Delete the events the user is the organizer for if they delete their profile.
  */
 public class ProfileFragment extends Fragment {
+    private static final int PROFILE_IMAGE_MAX_DIMENSION = 768;
+    private static final int PROFILE_IMAGE_MAX_BASE64_BYTES = 300 * 1024;
 
     UserDB userDBInstance;
     User currentUser;
@@ -273,8 +275,19 @@ public class ProfileFragment extends Fragment {
     }
 
     private void handleSelectedProfileImage(@NonNull Uri uri) {
+        Context context = getContext();
+        if (context == null) {
+            Log.w("Profile", "Ignoring selected profile image because fragment is detached.");
+            return;
+        }
+
         try {
-            String profileBase64 = ImageUtils.uriToCompressedBase64(requireContext(), uri);
+            String profileBase64 = ImageUtils.uriToCompressedBase64(
+                    context,
+                    uri,
+                    PROFILE_IMAGE_MAX_DIMENSION,
+                    PROFILE_IMAGE_MAX_BASE64_BYTES
+            );
             Image nextImage;
 
             if (currentUser != null
@@ -285,11 +298,18 @@ public class ProfileFragment extends Fragment {
                 nextImage = new Image(profileBase64);
             }
 
+            if (nextImage.getImageData() == null) {
+                throw new IOException("Selected profile image could not be decoded.");
+            }
+
             selectedProfileImage = nextImage;
             profileImageDirty = true;
             bindProfileImage(nextImage);
-        } catch (IOException e) {
-            Toast.makeText(getContext(), "Failed to process image", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e("Profile", "Failed to handle selected profile image", e);
+            if (isAdded()) {
+                Toast.makeText(getContext(), "Failed to process image", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
