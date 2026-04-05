@@ -1,6 +1,5 @@
 package com.example.breeze_seas;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,9 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
  *
  * <p>Current state:
  * - Loads accepted tickets through {@link TicketDB}.
- *
- * <p>Outstanding:
- * - Replace fallback display values once event location/ticket-type fields are finalized.
+ * - Opens the confirmation-ticket QR pass for each accepted event.
  */
 public class AttendingTicketsFragment extends Fragment {
 
@@ -125,6 +122,15 @@ public class AttendingTicketsFragment extends Fragment {
             return;
         }
 
-        // TODO: Open QRCode Fragment
+        Bundle args = new Bundle();
+        args.putBoolean("confirmationMode", true);
+        args.putString("eventId", ticket.getEventId());
+        args.putString("ticketTitle", ticket.getTitle());
+        args.putString("ticketDateLabel", ticket.getDateLabel());
+        args.putString("ticketTypeLabel", ticket.getTicketTypeLabel());
+
+        ViewQrCodeFragment fragment = new ViewQrCodeFragment();
+        fragment.setArguments(args);
+        ((MainActivity) requireActivity()).openSecondaryFragment(fragment);
     }
 }
