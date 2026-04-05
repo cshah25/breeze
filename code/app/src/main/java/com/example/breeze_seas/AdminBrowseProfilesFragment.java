@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * Displays a searchable, scrollable list of every registered user.
  * Uses {@link AdminViewModel} so the user list and listener persist across navigation
  * without requiring a re-fetch each time this fragment is recreated.
- * TODO: Implement popup before deletion
  */
 public class AdminBrowseProfilesFragment extends Fragment {
 
@@ -80,7 +79,7 @@ public class AdminBrowseProfilesFragment extends Fragment {
             int previousCount = adapter.getItemCount();
             adapter.updateList(users);
             adapter.filter(currentQuery);
-            if (users.size() < previousCount) {
+            if (adapter.getItemCount() < previousCount) {
                 Toast.makeText(getContext(), "Profile deleted", Toast.LENGTH_SHORT).show();
             }
         });
