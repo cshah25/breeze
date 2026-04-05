@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * Displays a searchable, scrollable list of every registered user.
  * Uses {@link AdminViewModel} so the user list and listener persist across navigation
  * without requiring a re-fetch each time this fragment is recreated.
- * TODO: Implement popup before deletion
  */
 public class AdminBrowseProfilesFragment extends Fragment {
 
@@ -75,7 +74,7 @@ public class AdminBrowseProfilesFragment extends Fragment {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // Observe live list — admins are filtered out inside the adapter
+        // Observe live list
         adminViewModel.getUsers().observe(getViewLifecycleOwner(), users -> {
             int previousCount = adapter.getItemCount();
             adapter.updateList(users);
