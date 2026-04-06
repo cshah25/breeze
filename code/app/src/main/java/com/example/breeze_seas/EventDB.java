@@ -10,6 +10,7 @@ import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.Filter;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -22,7 +23,9 @@ import com.google.firebase.firestore.WriteBatch;
 
 import com.google.android.gms.tasks.Tasks;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 public class EventDB {
@@ -256,14 +259,30 @@ public class EventDB {
 
     /**
      * Method to obtain query for all joinable public events for given user.
+     * This is EXPLICITLY meant to be used in the explore fragment.
+     * @param user User to get query for.
+     * @return Query for all joinable events for user.
+     */
+    public static Query getExploreEventsQuery(User user) {
+        setup();
+        String userId = user.getDeviceId();
+        // Only get events whose registration dates are open.
+        return  eventRef.whereEqualTo("isPrivate", false)  // Public only events
+                .whereNotEqualTo("organizerId", userId)
+                .orderBy("registrationEndTimestamp");
+    }
+
+    /**
+     * Method to obtain query for all joinable public events for given user.
+     * This is meant for a one time fetch use case.
      * @param user User to get query for.
      * @return Query for all joinable events for user.
      */
     public static Query getAllJoinableEventsQuery(User user) {
         setup();
         String userId = user.getDeviceId();
-        return  eventRef.whereLessThan("registrationStartTimestamp", Timestamp.now())
-                .whereGreaterThan("registrationEndTimestamp", Timestamp.now())
+        return  eventRef.whereLessThan("registrationStartTimestamp", new Timestamp(new Date(System.currentTimeMillis())))
+                .whereGreaterThan("registrationEndTimestamp", new Timestamp(new Date(System.currentTimeMillis())))
                 .whereEqualTo("isPrivate", false)  // Public only events
                 .whereNotEqualTo("organizerId", userId)
                 .orderBy("registrationEndTimestamp");

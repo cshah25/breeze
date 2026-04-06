@@ -16,7 +16,15 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -1030,6 +1038,16 @@ public class Event {
     }
 
     /**
+     * Helper method to take a firebase timestamp object and convert it into a searchable string.
+     * @param t Timestamp object.
+     * @return The month and weekday of the timestamp object.
+     */
+    private String timestampExpander(Timestamp t) {
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM EEEE", Locale.US);
+        return sdf.format(new Date(t.toDate().getTime()));
+    }
+
+    /**
      * Generates a string representation of the event object.
      * Useful when filtering for specific keywords.
      * @return A string representation of the event object.
@@ -1037,8 +1055,11 @@ public class Event {
     public String toString() {
         String tmp;
         // Get name and description of event
-        tmp = getName() == null ? "" : getName().toLowerCase(Locale.US);
-        tmp = tmp + " " + ((getDescription() == null) ? "" : getDescription().toLowerCase(Locale.US));
+        tmp = getName() == null ? "" : getName().toLowerCase(Locale.US) + " ";
+        tmp = tmp + ((getDescription() == null) ? "" : getDescription().toLowerCase(Locale.US)) + " ";
+        tmp = tmp + timestampExpander(getEventStartTimestamp()).toLowerCase(Locale.US) + " ";
+        tmp = tmp + timestampExpander(getEventEndTimestamp()).toLowerCase(Locale.US) + "";
+        Log.d("Event Class", "To String: " + tmp);
         return tmp;
     }
 }
