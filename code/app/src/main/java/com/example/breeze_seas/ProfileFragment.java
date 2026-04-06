@@ -124,7 +124,7 @@ public class ProfileFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(SessionViewModel.class);
         viewModel.getAndroidID().observe(getViewLifecycleOwner(), deviceId -> {
             if (deviceId != null) {
-                Log.d("BreezeSeas", "Observed ID: " + deviceId);
+                Log.d("Breeze", "Observed ID: " + deviceId);
                 fetchUserData(deviceId);
             }
         });

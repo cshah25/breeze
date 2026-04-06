@@ -1,5 +1,7 @@
 package com.example.breeze_seas;
 
+import androidx.annotation.Nullable;
+
 /**
  * UI-facing model for confirmed attending tickets.
  *
@@ -15,6 +17,8 @@ public class AttendingTicketUIModel {
     private final String ticketTypeLabel;
     private final String entryNote;
     private final String actionLabel;
+    @Nullable
+    private final String imageDocId;
 
     /**
      * Creates a presentation model for one attending ticket card.
@@ -36,6 +40,31 @@ public class AttendingTicketUIModel {
             String entryNote,
             String actionLabel
     ) {
+        this(eventId, title, dateLabel, locationLabel, ticketTypeLabel, entryNote, actionLabel, null);
+    }
+
+    /**
+     * Creates a presentation model for one attending ticket card.
+     *
+     * @param eventId Firestore event identifier for the related event.
+     * @param title Event title shown on the card.
+     * @param dateLabel Human-readable date string shown on the card.
+     * @param locationLabel Human-readable location string shown on the card.
+     * @param ticketTypeLabel Summary label describing the ticket type/state.
+     * @param entryNote Supporting copy shown under the main ticket details.
+     * @param actionLabel Label describing the tap action available on the card.
+     * @param imageDocId Optional image document id for the event poster.
+     */
+    public AttendingTicketUIModel(
+            String eventId,
+            String title,
+            String dateLabel,
+            String locationLabel,
+            String ticketTypeLabel,
+            String entryNote,
+            String actionLabel,
+            @Nullable String imageDocId
+    ) {
         this.eventId = eventId;
         this.title = title;
         this.dateLabel = dateLabel;
@@ -43,6 +72,7 @@ public class AttendingTicketUIModel {
         this.ticketTypeLabel = ticketTypeLabel;
         this.entryNote = entryNote;
         this.actionLabel = actionLabel;
+        this.imageDocId = imageDocId;
     }
 
     /**
@@ -106,5 +136,15 @@ public class AttendingTicketUIModel {
      */
     public String getActionLabel() {
         return actionLabel;
+    }
+
+    /**
+     * Returns the optional event poster image document id.
+     *
+     * @return Firestore image document id, or {@code null} when unavailable.
+     */
+    @Nullable
+    public String getImageDocId() {
+        return imageDocId;
     }
 }

@@ -19,4 +19,15 @@
     <color name="switch_track_unchecked">#E5E7EB</color>
     <color name="welcome_background">#FFFFFFFF</color>
     <color name="welcome_text_secondary">#6B7280</color>
+    <color name="breeze_deep">#0C1F33</color>
+    <color name="breeze_mid">#1D4F7A</color>
+    <color name="breeze_light">#8DE3E2</color>
+    <color name="breeze_mist">#E8F7F7</color>
+    <color name="breeze_chip_text">#EAF8FF</color>
+    <color name="snackbar_surface">#0F172A</color>
+    <color name="welcome_indicator_inactive">#CDD5DF</color>
+    <color name="welcome_indicator_active_start">#11243A</color>
+    <color name="welcome_indicator_active_end">#2E5E8A</color>
+    <color name="welcome_tile_text_dark">#0D1D31</color>
+    <color name="welcome_tile_text_light">#F8FCFF</color>
 </resources>

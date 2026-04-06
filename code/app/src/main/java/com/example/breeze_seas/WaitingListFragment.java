@@ -142,10 +142,8 @@ public class WaitingListFragment extends Fragment {
                 @Override
                 public void onUpdate() {
                     if (isAdded()) {
-                        // Notifications to winners and losers of the lottery
-                        ArrayList<User> winnerList = currentEvent.getPendingList().getUserList();
-                        ArrayList<User> loserList = new ArrayList<>(waitingListUserList);
-                        loserList.removeAll(winnerList);
+                        ArrayList<User> winnerList = new ArrayList<>(lottery.getLastRoundWinners());
+                        ArrayList<User> loserList = new ArrayList<>(lottery.getLastRoundLosers());
 
                         String userSent ="";
                         String content = "";
@@ -156,35 +154,21 @@ public class WaitingListFragment extends Fragment {
                         if (!winnerList.isEmpty()) {
                             for (int i = 0; i < winnerList.size(); i++) {
                                 userSent = winnerList.get(i).getDeviceId();
-                                // Send the notification to the database
                                 Notification notification = new Notification(WIN, content, eventId, eventName, userSent);
                                 notificationService.sendNotification(notification);
                             }
-                            Toast.makeText(getContext(), "Notification Sent!",
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(getContext(), "No users in this list!",
-                                    Toast.LENGTH_SHORT).show();
                         }
 
-                        // Loss announcement
                         if (!loserList.isEmpty()) {
                             for (int i = 0; i < loserList.size(); i++) {
                                 userSent = loserList.get(i).getDeviceId();
-                                // Send the notification to the database
                                 Notification notification = new Notification(LOSS, content, eventId, eventName, userSent);
                                 notificationService.sendNotification(notification);
                             }
-                            Toast.makeText(getContext(), "Notification Sent!",
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(getContext(), "No users in this list!",
-                                    Toast.LENGTH_SHORT).show();
                         }
 
+                        Toast.makeText(getContext(), "Draw results have been sent.", Toast.LENGTH_SHORT).show();
                         runLotteryBtn.setEnabled(true);
-
-
                     }
                 }
                 @Override

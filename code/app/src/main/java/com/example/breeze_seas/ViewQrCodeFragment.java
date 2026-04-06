@@ -401,13 +401,13 @@ public class ViewQrCodeFragment extends Fragment {
 
     @NonNull
     private String buildOrganizerQrFileName() {
-        return "breeze_seas_qr_" + sanitizeFileComponent(currentEventName) + "_" + System.currentTimeMillis() + ".png";
+        return "breeze_qr_" + sanitizeFileComponent(currentEventName) + "_" + System.currentTimeMillis() + ".png";
     }
 
     @NonNull
     private String buildTicketPdfFileName() {
         String ticketId = currentTicketId == null ? "ticket" : currentTicketId;
-        return "breeze_seas_ticket_" + sanitizeFileComponent(currentEventName) + "_" + ticketId + ".pdf";
+        return "breeze_ticket_" + sanitizeFileComponent(currentEventName) + "_" + ticketId + ".pdf";
     }
 
     private void saveQrWithMediaStore(@NonNull Bitmap qrBitmap, @NonNull String fileName) throws Exception {
@@ -416,7 +416,7 @@ public class ViewQrCodeFragment extends Fragment {
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
         values.put(
                 MediaStore.Images.Media.RELATIVE_PATH,
-                Environment.DIRECTORY_PICTURES + "/BreezeSeas"
+                Environment.DIRECTORY_PICTURES + "/Breeze"
         );
         values.put(MediaStore.Images.Media.IS_PENDING, 1);
 
@@ -441,7 +441,7 @@ public class ViewQrCodeFragment extends Fragment {
 
     private void saveQrLegacy(@NonNull Bitmap qrBitmap, @NonNull String fileName) throws Exception {
         File picturesDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        File appDirectory = new File(picturesDirectory, "BreezeSeas");
+        File appDirectory = new File(picturesDirectory, "Breeze");
         if (!appDirectory.exists() && !appDirectory.mkdirs()) {
             throw new IllegalStateException("Unable to create image directory.");
         }
@@ -467,7 +467,7 @@ public class ViewQrCodeFragment extends Fragment {
         values.put(MediaStore.Downloads.MIME_TYPE, "application/pdf");
         values.put(
                 MediaStore.Downloads.RELATIVE_PATH,
-                Environment.DIRECTORY_DOWNLOADS + "/BreezeSeas"
+                Environment.DIRECTORY_DOWNLOADS + "/Breeze"
         );
         values.put(MediaStore.Downloads.IS_PENDING, 1);
 
@@ -492,7 +492,7 @@ public class ViewQrCodeFragment extends Fragment {
 
     private void savePdfLegacy(@NonNull PdfDocument document, @NonNull String fileName) throws Exception {
         File downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        File appDirectory = new File(downloadsDirectory, "BreezeSeas");
+        File appDirectory = new File(downloadsDirectory, "Breeze");
         if (!appDirectory.exists() && !appDirectory.mkdirs()) {
             throw new IllegalStateException("Unable to create download directory.");
         }
@@ -564,7 +564,7 @@ public class ViewQrCodeFragment extends Fragment {
             @NonNull String holderName,
             @Nullable String dateLabel
     ) {
-        return "breeze-seas-confirmation-ticket"
+        return "breeze-confirmation-ticket"
                 + "\nTicket ID: " + ticketId
                 + "\nEvent ID: " + sanitizeText(eventId, "unknown-event")
                 + "\nEntrant ID: " + userId

@@ -1,5 +1,6 @@
 package com.example.breeze_seas;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -48,7 +50,12 @@ public class NotificationEntryAdapter extends RecyclerView.Adapter<NotificationE
             if (listener != null) listener.onNotificationClick(notification);
         });
 
-        bindTypePresentation(holder, notification);
+        int fallbackIconRes = bindTypePresentation(holder, notification);
+        bindFallbackIcon(holder.icon, fallbackIconRes);
+        UiImageBinder.bindEventPoster(holder.icon, notification.getEventId(),
+                () -> bindFallbackIcon(holder.icon, fallbackIconRes));
+        holder.unreadDot.setVisibility(notification.isSeen() ? View.GONE : View.VISIBLE);
+        holder.card.setAlpha(notification.isSeen() ? 0.74f : 1f);
 
         if (notification.getSentAt() != null) {
             long timestampMillis = notification.getSentAt().toDate().getTime();
@@ -70,6 +77,7 @@ public class NotificationEntryAdapter extends RecyclerView.Adapter<NotificationE
         TextView messageText, timeText, typeChip;
         ImageView icon;
         View card;
+        View unreadDot;
 
         public NotificationViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -78,32 +86,56 @@ public class NotificationEntryAdapter extends RecyclerView.Adapter<NotificationE
             typeChip = itemView.findViewById(R.id.notification_entry_type_chip);
             icon = itemView.findViewById(R.id.notification_entry_icon);
             card = itemView.findViewById(R.id.notification_entry_card);
+            unreadDot = itemView.findViewById(R.id.notification_unread_dot);
         }
     }
 
-    private void bindTypePresentation(@NonNull NotificationViewHolder holder, @NonNull Notification notification) {
+    private int bindTypePresentation(@NonNull NotificationViewHolder holder, @NonNull Notification notification) {
         NotificationType type = notification.getType();
+        int white = ContextCompat.getColor(holder.itemView.getContext(), android.R.color.white);
+        int black = ContextCompat.getColor(holder.itemView.getContext(), android.R.color.black);
 
         if (type == NotificationType.WIN) {
             holder.typeChip.setText("Selected");
             holder.typeChip.setBackgroundResource(R.drawable.bg_ticket_status_solid);
-            holder.typeChip.setTextColor(holder.itemView.getContext().getColor(android.R.color.white));
-            holder.icon.setImageResource(R.drawable.ic_star);
-            return;
+            holder.typeChip.setTextColor(white);
+            return R.drawable.ic_star;
         }
 
         if (type == NotificationType.LOSS) {
-            holder.typeChip.setText("Lottery");
+            holder.typeChip.setText("Draw result");
             holder.typeChip.setBackgroundResource(R.drawable.bg_ticket_status_outline);
-            holder.typeChip.setTextColor(holder.itemView.getContext().getColor(android.R.color.black));
-            holder.icon.setImageResource(R.drawable.ic_clock);
-            return;
+            holder.typeChip.setTextColor(black);
+            return R.drawable.ic_luck;
+        }
+
+        if (type == NotificationType.PRIVATE_EVENT_INVITE) {
+            holder.typeChip.setText("Private invite");
+            holder.typeChip.setBackgroundResource(R.drawable.bg_ticket_status_solid);
+            holder.typeChip.setTextColor(white);
+            return R.drawable.ic_ticket;
+        }
+
+        if (type == NotificationType.CO_ORG_INVITE) {
+            holder.typeChip.setText("Co-organizer");
+            holder.typeChip.setBackgroundResource(R.drawable.bg_ticket_status_outline);
+            holder.typeChip.setTextColor(black);
+            return R.drawable.ic_star;
         }
 
         holder.typeChip.setText("Announcement");
         holder.typeChip.setBackgroundResource(R.drawable.bg_ticket_status_outline);
-        holder.typeChip.setTextColor(holder.itemView.getContext().getColor(android.R.color.black));
-        holder.icon.setImageResource(R.drawable.ic_notification);
+        holder.typeChip.setTextColor(black);
+        return R.drawable.ic_notification;
+    }
+
+    private void bindFallbackIcon(@NonNull ImageView imageView, int drawableResId) {
+        int padding = (int) (imageView.getResources().getDisplayMetrics().density * 14);
+        imageView.setImageResource(drawableResId);
+        imageView.setImageTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(imageView.getContext(), R.color.text_primary)));
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setPadding(padding, padding, padding, padding);
     }
 
     private String formatTimestamp(long timestamp) {

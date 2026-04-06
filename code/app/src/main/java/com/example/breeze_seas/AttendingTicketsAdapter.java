@@ -1,11 +1,14 @@
 package com.example.breeze_seas;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -87,6 +90,9 @@ public class AttendingTicketsAdapter extends RecyclerView.Adapter<AttendingTicke
         }
         holder.ticketType.setText(ticket.getTicketTypeLabel());
         holder.statusChip.setText("Confirmed");
+        bindFallbackPoster(holder.poster);
+        UiImageBinder.bindImageDoc(holder.poster, ticket.getImageDocId(),
+                () -> bindFallbackPoster(holder.poster));
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             /**
@@ -113,6 +119,15 @@ public class AttendingTicketsAdapter extends RecyclerView.Adapter<AttendingTicke
         return items.size();
     }
 
+    private void bindFallbackPoster(@NonNull ImageView imageView) {
+        int padding = (int) (imageView.getResources().getDisplayMetrics().density * 16);
+        imageView.setImageResource(R.drawable.ic_ticket);
+        imageView.setImageTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(imageView.getContext(), R.color.text_primary)));
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setPadding(padding, padding, padding, padding);
+    }
+
     /**
      * View holder for a single attending-ticket card.
      */
@@ -122,6 +137,7 @@ public class AttendingTicketsAdapter extends RecyclerView.Adapter<AttendingTicke
         final TextView location;
         final TextView ticketType;
         final TextView statusChip;
+        final ImageView poster;
 
         /**
          * Binds the child views used to render one attending-ticket card.
@@ -135,6 +151,7 @@ public class AttendingTicketsAdapter extends RecyclerView.Adapter<AttendingTicke
             location = itemView.findViewById(R.id.attending_ticket_location);
             ticketType = itemView.findViewById(R.id.attending_ticket_type_value);
             statusChip = itemView.findViewById(R.id.attending_ticket_status_chip);
+            poster = itemView.findViewById(R.id.attending_ticket_poster);
         }
     }
 }

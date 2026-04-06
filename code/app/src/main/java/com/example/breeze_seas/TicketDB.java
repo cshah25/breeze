@@ -201,12 +201,12 @@ public final class TicketDB {
      *
      * <p>Public-event invitations move into the attending state. Private-event invitations
      * move into the waiting-list state because the entrant is only accepting the right to join
-     * the waitlist for that event.
+     * the waitlist for that event and still needs to survive the draw before becoming attending.
      *
      * @param ticket Invited ticket being accepted.
      */
     public void acceptInvitation(@NonNull TicketUIModel ticket) {
-        updateParticipantStatus(ticket.getEventId(), ticket.isPrivateEvent() ? "waiting" : "accepted");
+        updateParticipantStatus(ticket.getEventId(), ticket.isPrivateInvitePending() ? "waiting" : "accepted");
     }
 
     /**
@@ -219,7 +219,7 @@ public final class TicketDB {
      * @param ticket Invited ticket being declined.
      */
     public void declineInvitation(@NonNull TicketUIModel ticket) {
-        if (ticket.isPrivateEvent()) {
+        if (ticket.isPrivateInvitePending()) {
             deleteParticipant(ticket.getEventId());
             return;
         }
@@ -556,10 +556,13 @@ public final class TicketDB {
         String dateLabel = buildDateLabel(eventDocument, timeJoined);
         String locationLabel = buildLocationLabel(eventDocument);
         boolean privateEvent = Boolean.TRUE.equals(eventDocument.getBoolean("isPrivate"));
+        String imageDocId = eventDocument.getString("imageDocId");
         boolean eventEnded = hasEventEnded(eventDocument);
 
         if (eventEnded && !isArchivedStatus(status)) {
             return LoadedTicket.forPast(new PastEventUIModel(
+                    eventId,
+                    imageDocId,
                     title,
                     dateLabel,
                     locationLabel,
@@ -576,7 +579,9 @@ public final class TicketDB {
                         title,
                         dateLabel,
                         TicketUIModel.Status.PENDING,
-                        privateEvent
+                        privateEvent,
+                        false,
+                        imageDocId
                 ));
             case "backup":
                 return LoadedTicket.forActive(new TicketUIModel(
@@ -584,7 +589,19 @@ public final class TicketDB {
                         title,
                         dateLabel,
                         TicketUIModel.Status.BACKUP,
-                        privateEvent
+                        privateEvent,
+                        false,
+                        imageDocId
+                ));
+            case "private_invited":
+                return LoadedTicket.forActive(new TicketUIModel(
+                        eventId,
+                        title,
+                        dateLabel,
+                        TicketUIModel.Status.ACTION_REQUIRED,
+                        privateEvent,
+                        true,
+                        imageDocId
                 ));
             case "invited":
             case "pending":
@@ -593,7 +610,9 @@ public final class TicketDB {
                         title,
                         dateLabel,
                         TicketUIModel.Status.ACTION_REQUIRED,
-                        privateEvent
+                        privateEvent,
+                        false,
+                        imageDocId
                 ));
             case "accepted":
                 return LoadedTicket.forAttending(new AttendingTicketUIModel(
@@ -603,18 +622,23 @@ public final class TicketDB {
                         locationLabel,
                         "Confirmed entry",
                         "Show this ticket during event check-in.",
-                        "Open QR pass"
+                        "Open QR pass",
+                        imageDocId
                 ));
             case "declined":
             case "cancelled":
             case "not_selected":
                 return LoadedTicket.forPast(new PastEventUIModel(
+                        eventId,
+                        imageDocId,
                         title,
                         dateLabel,
                         locationLabel,
                         formatPastStatus(status),
                         formatPastDetail(status),
-                        "declined".equals(status) ? R.drawable.ic_clock : R.drawable.ic_info
+                        "not_selected".equals(status)
+                                ? R.drawable.ic_luck
+                                : ("declined".equals(status) ? R.drawable.ic_clock : R.drawable.ic_info)
                 ));
         }
 
@@ -749,7 +773,7 @@ public final class TicketDB {
             case "cancelled":
                 return "Cancelled";
             case "not_selected":
-                return "Not selected";
+                return "Draw closed";
         }
         return "Past";
     }
@@ -768,7 +792,7 @@ public final class TicketDB {
             case "cancelled":
                 return "This registration was cancelled.";
             case "not_selected":
-                return "The draw completed without selecting your entry.";
+                return "The draw finished and your entry was not selected.";
         }
         return "This ticket is no longer active.";
     }

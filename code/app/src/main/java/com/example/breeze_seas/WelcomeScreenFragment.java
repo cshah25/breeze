@@ -20,28 +20,29 @@ public class WelcomeScreenFragment extends Fragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Bind Started Button
         Button startButton = view.findViewById(R.id.welcome_screen_start_button);
-
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 SignUpFragment signUpFragment = new SignUpFragment();
 
-                // Switch to sign up page
+                if (getActivity() == null) {
+                    return;
+                }
+
                 getActivity().getSupportFragmentManager()
                         .beginTransaction()
+                        .setCustomAnimations(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out,
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                        )
                         .replace(R.id.fragment_container, signUpFragment)
                         .commit();
-
             }
         });
     }

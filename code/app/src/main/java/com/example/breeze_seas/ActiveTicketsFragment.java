@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -281,7 +282,7 @@ public class ActiveTicketsFragment extends Fragment {
             public void onClick(View v) {
                 dialog.dismiss();
                 ticketDb.leaveWaitlist(ticket);
-                Snackbar.make(rootView, "You left the waitlist.", Snackbar.LENGTH_SHORT).show();
+                showTicketSnackbar(rootView, getString(R.string.ticket_snackbar_waitlist_left), null);
             }
         });
         secondaryButton.setOnClickListener(new View.OnClickListener() {
@@ -303,8 +304,10 @@ public class ActiveTicketsFragment extends Fragment {
      * Shows a centered dialog for the "Action Required" state where the entrant can accept or decline.
      *
      * <p>Current behavior:
-     * - Accept: updates the participant status to {@code accepted}.
-     * - Decline: updates the participant status to {@code declined}.
+     * - Public draw selection accept: updates the participant status to {@code accepted}.
+     * - Private invite accept: updates the participant status to {@code waiting}.
+     * - Public draw selection decline: updates the participant status to {@code declined}.
+     * - Private invite decline: removes the reserved participant row.
      *
      * <p>Outstanding:
      * - Surface write failures with the final UX once the wider app error-handling pattern is settled.
@@ -317,11 +320,11 @@ public class ActiveTicketsFragment extends Fragment {
         if (!isAdded()) return;
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_ticket_action, null, false);
-        String title = ticket.isPrivateEvent() ? "Private invite" : "Action required";
-        String subtitle = ticket.isPrivateEvent()
-                ? "You were invited to join the waitlist for this private event. Accept to join the waitlist, or decline to dismiss this invite."
-                : "You were selected for this event. Accept to confirm your spot, or decline to release it to the backup pool.";
-        String primaryLabel = ticket.isPrivateEvent() ? "Join Waitlist" : "Accept Invitation";
+        String title = ticket.isPrivateInvitePending() ? "Private invitation" : "You're selected";
+        String subtitle = ticket.isPrivateInvitePending()
+                ? "You were invited to join this private event. Accept to enter the waitlist, or decline to remove this invite."
+                : "The draw is complete and your spot is ready. Accept to move this event into Attending, or decline to release it.";
+        String primaryLabel = ticket.isPrivateInvitePending() ? "Join Waitlist" : "Accept Invitation";
         bindEventDialogContent(
                 dialogView,
                 title,
@@ -337,7 +340,7 @@ public class ActiveTicketsFragment extends Fragment {
 
         primaryButton.setOnClickListener(new View.OnClickListener() {
             /**
-             * Accepts the invitation and moves the ticket into the attending state.
+             * Accepts the invitation and advances it to the next valid participant state.
              *
              * @param v The pressed primary action view.
              */
@@ -345,13 +348,25 @@ public class ActiveTicketsFragment extends Fragment {
             public void onClick(View v) {
                 dialog.dismiss();
                 ticketDb.acceptInvitation(ticket);
-                Snackbar.make(
+                if (ticket.isPrivateInvitePending()) {
+                    showTicketSnackbar(
+                            rootView,
+                            getString(R.string.ticket_snackbar_private_accepted),
+                            null
+                    );
+                    return;
+                }
+
+                showTicketSnackbar(
                         rootView,
-                        ticket.isPrivateEvent()
-                                ? "Invite accepted. You joined the private waitlist."
-                                : "Invitation accepted. Ticket moved to Attending.",
-                        Snackbar.LENGTH_SHORT
-                ).show();
+                        getString(R.string.ticket_snackbar_invite_accepted),
+                        () -> {
+                            Fragment parent = getParentFragment();
+                            if (parent instanceof TicketsFragment) {
+                                ((TicketsFragment) parent).openTab(1);
+                            }
+                        }
+                );
             }
         });
         secondaryButton.setOnClickListener(new View.OnClickListener() {
@@ -380,8 +395,8 @@ public class ActiveTicketsFragment extends Fragment {
         if (!isAdded()) return;
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_ticket_confirmation, null, false);
-        String title = ticket.isPrivateEvent() ? "Decline private invite?" : "Decline invitation?";
-        String message = ticket.isPrivateEvent()
+        String title = ticket.isPrivateInvitePending() ? "Decline private invite?" : "Decline invitation?";
+        String message = ticket.isPrivateInvitePending()
                 ? "If you decline, this private-event waitlist invite will be removed."
                 : "If you decline, your spot will be offered to someone in the backup pool.";
         bindConfirmationDialogContent(
@@ -406,11 +421,18 @@ public class ActiveTicketsFragment extends Fragment {
             public void onClick(View v) {
                 dialog.dismiss();
                 ticketDb.declineInvitation(ticket);
-                Snackbar.make(
+                showTicketSnackbar(
                         rootView,
-                        ticket.isPrivateEvent() ? "Private invite declined" : "Invitation declined",
-                        Snackbar.LENGTH_SHORT
-                ).show();
+                        ticket.isPrivateInvitePending()
+                                ? getString(R.string.notification_private_invite_declined)
+                                : getString(R.string.ticket_snackbar_invite_declined),
+                        ticket.isPrivateInvitePending() ? null : () -> {
+                            Fragment parent = getParentFragment();
+                            if (parent instanceof TicketsFragment) {
+                                ((TicketsFragment) parent).openTab(2);
+                            }
+                        }
+                );
             }
         });
         secondaryButton.setOnClickListener(new View.OnClickListener() {
@@ -505,5 +527,20 @@ public class ActiveTicketsFragment extends Fragment {
         messageView.setText(message);
         primaryButton.setText(primaryLabel);
         secondaryButton.setText(secondaryLabel);
+    }
+
+    private void showTicketSnackbar(@NonNull View rootView,
+                                    @NonNull String message,
+                                    @Nullable Runnable action) {
+        Snackbar snackbar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
+                .setBackgroundTint(ContextCompat.getColor(requireContext(), R.color.snackbar_surface))
+                .setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white));
+
+        if (action != null) {
+            snackbar.setAction(R.string.ticket_snackbar_open, v -> action.run());
+            snackbar.setActionTextColor(ContextCompat.getColor(requireContext(), R.color.breeze_light));
+        }
+
+        snackbar.show();
     }
 }

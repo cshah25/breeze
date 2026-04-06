@@ -138,6 +138,13 @@ public class TicketsFragment extends Fragment {
         }
     }
 
+    public void openTab(int index) {
+        if (index < 0 || index >= 3) {
+            return;
+        }
+        selectTab(index, true);
+    }
+
     /**
      * Updates the activated state of the custom segmented control buttons.
      *

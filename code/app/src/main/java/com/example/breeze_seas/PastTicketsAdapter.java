@@ -1,5 +1,6 @@
 package com.example.breeze_seas;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -77,7 +79,9 @@ public class PastTicketsAdapter extends RecyclerView.Adapter<PastTicketsAdapter.
     public void onBindViewHolder(@NonNull PastTicketViewHolder holder, int position) {
         PastEventUIModel event = items.get(position);
 
-        holder.icon.setImageResource(event.getIconResId());
+        bindFallbackIcon(holder.icon, event.getIconResId());
+        UiImageBinder.bindImageDoc(holder.icon, event.getImageDocId(),
+                () -> bindFallbackIcon(holder.icon, event.getIconResId()));
         holder.title.setText(event.getTitle());
         holder.date.setText(event.getDateLabel());
         holder.location.setText(event.getLocationLabel());
@@ -107,6 +111,15 @@ public class PastTicketsAdapter extends RecyclerView.Adapter<PastTicketsAdapter.
     @Override
     public int getItemCount() {
         return items.size();
+    }
+
+    private void bindFallbackIcon(@NonNull ImageView imageView, int drawableResId) {
+        int padding = (int) (imageView.getResources().getDisplayMetrics().density * 12);
+        imageView.setImageResource(drawableResId);
+        imageView.setImageTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(imageView.getContext(), R.color.text_primary)));
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setPadding(padding, padding, padding, padding);
     }
 
     /**
