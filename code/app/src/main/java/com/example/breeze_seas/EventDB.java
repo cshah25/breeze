@@ -10,7 +10,6 @@ import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.Filter;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -23,11 +22,14 @@ import com.google.firebase.firestore.WriteBatch;
 
 import com.google.android.gms.tasks.Tasks;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Map;
 
+
+/**
+ * EventDB
+ * This class manages queries for use by the event class.
+ */
 public class EventDB {
     private static FirebaseFirestore db;
     private static CollectionReference eventRef;
@@ -37,6 +39,9 @@ public class EventDB {
     private EventDB() {
     }
 
+    /**
+     * Helper method to set up the firebase connection reference.
+     */
     private static void setup() {
         if (!setup) {
             db = DBConnector.getDb();
@@ -63,9 +68,20 @@ public class EventDB {
         return eventRef;
     }
 
-    // Add Event to DB
+    /**
+     * Callback interface for when adding an event.
+     */
     public interface AddEventCallback {
+        /**
+         * Called when adding an event to the database was successful.
+         * @param eventId Event id of the added successful.
+         */
         void onSuccess(String eventId);
+
+        /**
+         * Called when adding an event to the database has failed.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -85,8 +101,19 @@ public class EventDB {
                 .addOnFailureListener(callback::onFailure);
     }
 
+    /**
+     * Callback interface when updating an event document in the database.
+     */
     public interface EventMutationCallback {
+        /**
+         * Called when modifying an event document was successful.
+         */
         void onSuccess();
+
+        /**
+         * Called when modifying an event document has failed.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -204,9 +231,20 @@ public class EventDB {
         }
     }
 
-    // Get event by id
+    /**
+     * Callback interface when loading a single event document from the database.
+     */
     public interface LoadSingleEventCallback {
+        /**
+         * Called when an event object was successfully loaded from the database.
+         * @param event Event object that was loaded.
+         */
         void onSuccess(Event event);
+
+        /**
+         * Called when loading the event object from the database has failed.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -237,9 +275,20 @@ public class EventDB {
         return eventRef.orderBy("createdTimestamp");
     }
 
-    // Get all events
+    /**
+     * Callback interface when loading all events from the database.
+     */
     public interface LoadEventsCallback {
+        /**
+         * Called when all events are successfully loaded.
+         * @param events ArrayList of events reflecting the database at time of calling.
+         */
         void onSuccess(ArrayList<Event> events);
+
+        /**
+         * Called when there is a failure in loading all events from the database.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -266,7 +315,6 @@ public class EventDB {
     public static Query getExploreEventsQuery(User user) {
         setup();
         String userId = user.getDeviceId();
-        // Only get events whose registration dates are open.
         return  eventRef.whereEqualTo("isPrivate", false)  // Public only events
                 .whereNotEqualTo("organizerId", userId)
                 .orderBy("registrationEndTimestamp");

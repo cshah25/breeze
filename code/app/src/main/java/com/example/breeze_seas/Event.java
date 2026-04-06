@@ -3,26 +3,21 @@ package com.example.breeze_seas;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.QuerySnapshot;
-
-import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -201,7 +196,7 @@ public class Event {
         this.coOrganizerId = new ArrayList<String>();
         this.name = null;
         this.description = null;
-        this.image.setValue(null);
+        this.image.postValue(null);
         this.geolocationEnforced = false;
         this.createdTimestamp = Timestamp.now();  // Use timestamp at creation
         this.modifiedTimestamp = Timestamp.now();  // Use timestamp at creation
@@ -835,9 +830,24 @@ public class Event {
         }
     }
 
+    /**
+     * Callback Interface for when event detects a realtime update.
+     */
     public interface EventUpdatedCallback {
+        /**
+         * Called when an event detects a change.
+         */
         void onUpdated();
+
+        /**
+         * Called when an event detects it is deleted.
+         */
         void onDeleted();
+
+        /**
+         * Called when the realtime listener fails.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -895,6 +905,10 @@ public class Event {
         }
     }
 
+    /**
+     * Start realtime listeners on all list classes.
+     * @param listener The callback function to be called when a list class detects an update.
+     */
     public void startListenAllLists(StatusList.ListUpdateListener listener) {
         if (getWaitingList() != null) getWaitingList().startListening(listener);
         if (getPendingList() != null) getPendingList().startListening(listener);
@@ -902,6 +916,9 @@ public class Event {
         if (getDeclinedList() != null) getDeclinedList().startListening(listener);
     }
 
+    /**
+     * Stop realtime listeners on all list classes.
+     */
     public void stopListenAllLists() {
         if (waitingList != null) waitingList.stopListening();
         if (pendingList != null) pendingList.stopListening();
@@ -965,9 +982,19 @@ public class Event {
         }
     }
 
-
+    /**
+     * Callback interface for when {@link Event#fetchLists(ListsLoadedCallback)} finishes.
+     */
     public interface ListsLoadedCallback {
+        /**
+         * Called when lists are successfully loaded
+         */
         void onSuccess();
+
+        /**
+         * Called when lists failed to load.
+         * @param e Exception message.
+         */
         void onFailure(Exception e);
     }
 
@@ -1038,6 +1065,73 @@ public class Event {
     }
 
     /**
+     * Callback interface for when {@link Event#fetchOrganizerNames(fetchOrganizerNamesCallback)} finishes.
+     */
+    public interface fetchOrganizerNamesCallback {
+        /**
+         * Called when organizers names are successfully fetched.
+         * @param names ArrayList of organizer name (userName + firstName + lastName)
+         */
+        void onSuccess(ArrayList<String> names);
+
+        /**
+         * Called when organizers names are unable to be fetched.
+         * @param e Exception message.
+         */
+        void onFailure(Exception e);
+    }
+
+    /**
+     * Obtains the names of the organizer tied to this event.
+     */
+    public void fetchOrganizerNames(fetchOrganizerNamesCallback callback) {
+        ArrayList<String> orgIds = new ArrayList<String>(coOrganizerId);
+        orgIds.add(organizerId);
+
+        ArrayList<String> names = new ArrayList<String>();
+        int total = orgIds.size();
+        final int[] fetched = {0};
+        for (String id : orgIds) {
+            DBConnector.getDb().collection("users")
+                    .document(id)
+                    .get()
+                    .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                        @Override
+                        public void onSuccess(DocumentSnapshot documentSnapshot) {
+                            String userName = "";
+                            String firstName = "";
+                            String lastName = "";
+
+                            // Fetch data
+                            if (documentSnapshot.getData() != null) {
+                                userName = (String) documentSnapshot.getData().getOrDefault("userName", "");
+                                firstName = (String) documentSnapshot.getData().getOrDefault("firstName", "");
+                                lastName = (String) documentSnapshot.getData().getOrDefault("lastName", "");
+                            }
+
+                            // Add to array
+                            names.add(userName.toLowerCase(Locale.US)
+                                    + firstName.toLowerCase(Locale.US)
+                                    + lastName.toLowerCase(Locale.US));
+
+                            // Check Finish Condition
+                            fetched[0]++;
+                            if (fetched[0] >= total) {
+                                callback.onSuccess(names);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.e("Event Class", "Failed to fetch organizer name" + e);
+                            callback.onFailure(e);
+                        }
+                    });
+        }
+    }
+
+    /**
      * Helper method to take a firebase timestamp object and convert it into a searchable string.
      * @param t Timestamp object.
      * @return The month and weekday of the timestamp object.
@@ -1055,11 +1149,16 @@ public class Event {
     public String toString() {
         String tmp;
         // Get name and description of event
-        tmp = getName() == null ? "" : getName().toLowerCase(Locale.US) + " ";
-        tmp = tmp + ((getDescription() == null) ? "" : getDescription().toLowerCase(Locale.US)) + " ";
-        tmp = tmp + timestampExpander(getEventStartTimestamp()).toLowerCase(Locale.US) + " ";
-        tmp = tmp + timestampExpander(getEventEndTimestamp()).toLowerCase(Locale.US) + "";
-        Log.d("Event Class", "To String: " + tmp);
+        tmp = getName() == null ? "" : getName().toLowerCase(Locale.US);
+        tmp = tmp + " " + ((getDescription() == null) ? "" : getDescription().toLowerCase(Locale.US));
+
+        // Deal with null timestamps
+        if (getEventStartTimestamp() != null) {
+            tmp = tmp + " " + timestampExpander(getEventStartTimestamp()).toLowerCase(Locale.US);
+        }
+        if (getEventEndTimestamp() != null) {
+            tmp = tmp + " " + timestampExpander(getEventEndTimestamp()).toLowerCase(Locale.US);
+        }
         return tmp;
     }
 }
