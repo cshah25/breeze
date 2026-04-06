@@ -64,6 +64,7 @@ public class OrganizeFragment extends Fragment {
                     EventDB.getAllEventsOrganizedByUserQuery(user),
                     viewModel.getAndroidID().getValue(),
                     false,
+                    false,
                     false));
         }
         // Save reference to EventHandler list of events

@@ -100,8 +100,9 @@ public class ExploreFragment extends Fragment implements RecyclerViewClickListen
             exploreViewModel.setEventHandler(new EventHandler(
                     getActivity(),
                     getContext().getApplicationContext(),
-                    EventDB.getAllJoinableEventsQuery(user),
+                    EventDB.getExploreEventsQuery(user),
                     viewModel.getAndroidID().getValue(),
+                    true,
                     true,
                     true));
         }

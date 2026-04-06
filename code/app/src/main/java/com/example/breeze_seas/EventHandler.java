@@ -4,6 +4,8 @@ import static androidx.core.content.ContentProviderCompat.requireContext;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -20,7 +22,6 @@ import com.google.firebase.firestore.QuerySnapshot;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
@@ -35,17 +36,24 @@ public class EventHandler {
     private final Context context;
     private final String userId;
     private final boolean hideCoOrganizerEvents;
+    private final boolean showRegistrableEventsOnly;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Long latestComparedMillis = null;
+    private final Runnable timedRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    updateTime();
+                    updateOutDatedShown();
+                    filter();
+                    sort();
+                    post();
+
+                    // Rerun this task after delay has passed.
+                    handler.postDelayed(this, getNextMinuteInMillis());
+                }
+            };
+
     private final boolean searchFilterEnabled;
-    private ListenerRegistration eventHandlerListener = null;
-    private final HashMap<String, Event> imageListeners = new HashMap<String, Event>();
-    private final Observer<Image> imageObserver = new Observer<Image>() {
-        @Override
-        public void onChanged(Image image) {
-            post();
-        }
-    };
-    private final Query query;
-    private final HashMap<String, Event> queryHashMapOfEvents = new HashMap<String, Event>();
     private String keywordString = "";
     @Nullable
     private Long availabilityStartMillis = null;
@@ -55,6 +63,17 @@ public class EventHandler {
     private Integer minCapacityFilter = null;
     @Nullable
     private Integer maxCapacityFilter = null;
+    private ListenerRegistration eventHandlerListener = null;
+    private final HashMap<String, Event> imageListeners = new HashMap<String, Event>();
+    private final Observer<Image> imageObserver = new Observer<Image>() {
+        @Override
+        public void onChanged(Image image) {
+            post();
+        }
+    };
+
+    private final Query query;
+    private final HashMap<String, Event> queryHashMapOfEvents = new HashMap<String, Event>();
     private final MutableLiveData<ArrayList<Event>> filteredListOfEventsData = new MutableLiveData<>(new ArrayList<Event>());
     private final MutableLiveData<Event> eventShownData = new MutableLiveData<>();
 
@@ -65,6 +84,7 @@ public class EventHandler {
      * @param q Query to generate events from.
      * @param userId DeviceId of current user. Used for co organizer checks.
      * @param hideCoOrganizerEvents Boolean dictating whether coOrganized Events should be displayed or not.
+     * @param showRegistrableEventsOnly Boolean dictating to only compute on Events that are currently registrable.
      * @param enableSearchFilter Boolean dictating whether filter computations should be enabled or not.
      */
     public EventHandler(Activity activity,
@@ -72,13 +92,23 @@ public class EventHandler {
                         Query q,
                         String userId,
                         boolean hideCoOrganizerEvents,
+                        boolean showRegistrableEventsOnly,
                         boolean enableSearchFilter) {
         this.activity = new WeakReference<>(activity);
         this.context = context;
         this.query = q;
         this.userId = userId;
         this.hideCoOrganizerEvents = hideCoOrganizerEvents;
+        this.showRegistrableEventsOnly = showRegistrableEventsOnly;
         this.searchFilterEnabled = enableSearchFilter;
+
+        // If required to show only registrable events
+        if (this.showRegistrableEventsOnly) {
+            // Start task to be run every minute
+            startMinuteScheduler();
+        }
+
+        // Activate realtime listener
         startListen();
     }
 
@@ -99,6 +129,89 @@ public class EventHandler {
     }
 
     /**
+     * Helper method to initiate the runnable to be scheduled to be run every minute.
+     */
+    private void startMinuteScheduler() {
+        // Do not do anything if showRegistrableEventsOnly is false.
+        if (!showRegistrableEventsOnly) {
+            return;
+        }
+
+        // Remove and post
+        handler.removeCallbacks(timedRunnable);
+        handler.post(timedRunnable);
+    }
+
+    /**
+     * Helper method to stop the runnable being scheduled every minute.
+     */
+    private void stopMinuteScheduler() {
+        if (!showRegistrableEventsOnly) {
+            return;
+        }
+
+        // Remove
+        handler.removeCallbacks(timedRunnable);
+    }
+
+    /**
+     * Helper method to retrieve current time.
+     */
+    private void updateTime() {
+        // Round down to nearest minute
+        long millisNow = System.currentTimeMillis();
+        long millisInMinute = millisNow % 60000;  // 60000 milliseconds is 60 seconds or 1 minute
+        if (millisInMinute < 30000) {  // less than 30000 milliseconds or 30 seconds
+            // Round down
+            this.latestComparedMillis = millisNow - millisInMinute;
+        } else {
+            // Round up
+            this.latestComparedMillis = millisNow + (60000 - millisInMinute);
+        }
+    }
+
+    /**
+     * Helper method to return the milliseconds till the next minute.
+     * @return Milliseconds till the next minute.
+     */
+    private long getNextMinuteInMillis() {
+        // Calculate the delay in milliseconds for the next schedule of task
+        long now = System.currentTimeMillis();
+        long nextMinute = ((now / 60000) + 1) * 60000;
+        long delay = nextMinute - now;
+        return delay;
+    }
+
+    /**
+     * Helper method to determine if the event class is currently registrable or not.
+     * @param e Event class to check
+     * @return True if the event is registrable, otherwise false.
+     */
+    private boolean eventIsRegistrable(Event e) {
+        long regStartMillis = e.getRegistrationStartTimestamp().toDate().getTime();
+        long regEndMillis = e.getRegistrationEndTimestamp().toDate().getTime();
+
+        // Check if within range
+        return ((regStartMillis <= latestComparedMillis) && (latestComparedMillis < regEndMillis));
+    }
+
+    /**
+     * Helper method to remove eventShown if registration deadline has finished.
+     * This is called internally by the runnable to  remove events as soon as they are outdated.
+     */
+    private void updateOutDatedShown() {
+        // Do nothing if false
+        if (!showRegistrableEventsOnly) {
+            return;
+        }
+
+        // No longer registrable
+        if (eventShownData.getValue() != null && !eventIsRegistrable(eventShownData.getValue())) {
+            postShownDelete();
+        }
+    }
+
+    /**
      * Applies all filter options, and modifies filteredListOfEvents as a side effect.
      * Notifying observers is done by {@link EventHandler#post()}
      */
@@ -116,6 +229,16 @@ public class EventHandler {
 
         // Apply filter
         for (Event e : queryHashMapOfEvents.values()) {
+            // Check if registration date is valid
+            if (showRegistrableEventsOnly && !eventIsRegistrable(e)) {
+                continue;  // skip non registrable events
+            }
+
+            // User is a co-organizer
+            if (hideCoOrganizerEvents && userIsCoOrganizer(e)) {
+                continue;  // skip co organized events
+            }
+
             if (matchesFilter(e)) {
                 filteredEvents.add(e);
             }
@@ -168,24 +291,22 @@ public class EventHandler {
      * @return true if the event falls within the chosen availability window.
      */
     private boolean matchesAvailabilityFilter(Event e) {
+        // Filter not defined
         if (availabilityStartMillis == null && availabilityEndMillis == null) {
             return true;
         }
 
-        if (e.getEventStartTimestamp() == null && e.getEventEndTimestamp() == null) {
+        // Event doesn't have valid timestamps
+        if (e.getEventStartTimestamp() == null || e.getEventEndTimestamp() == null) {
             return false;
         }
 
-        long eventStartMillis = (e.getEventStartTimestamp() != null)
-                ? e.getEventStartTimestamp().toDate().getTime()
-                : Objects.requireNonNull(e.getEventEndTimestamp()).toDate().getTime();
-        long eventEndMillis = (e.getEventEndTimestamp() != null)
-                ? e.getEventEndTimestamp().toDate().getTime()
-                : eventStartMillis;
+        // Compare
+        long eventStartMillis = e.getEventStartTimestamp().toDate().getTime();
+        long eventEndMillis = e.getEventEndTimestamp().toDate().getTime();
         long filterStartMillis = (availabilityStartMillis == null) ? Long.MIN_VALUE : availabilityStartMillis;
         long filterEndMillis = (availabilityEndMillis == null) ? Long.MAX_VALUE : availabilityEndMillis;
-
-        return eventEndMillis >= filterStartMillis && eventStartMillis <= filterEndMillis;
+        return filterStartMillis <= eventStartMillis && eventEndMillis <= filterEndMillis;
     }
 
     /**
@@ -299,7 +420,6 @@ public class EventHandler {
      */
     public int getActiveFilterCount() {
         int count = 0;
-
         if (availabilityStartMillis != null || availabilityEndMillis != null) {
             count++;
         }
@@ -309,7 +429,6 @@ public class EventHandler {
         if (maxCapacityFilter != null) {
             count++;
         }
-
         return count;
     }
 
@@ -365,13 +484,6 @@ public class EventHandler {
      */
     private void addEvent(Map<String, Object> map) {
         Event e = new Event(map);
-        // Because firebase does not have an arrayNotContains operation.
-        // We must manually filter out co-organizers.
-        // Check if user is a coOrganizer for this event
-        if (hideCoOrganizerEvents && userIsCoOrganizer(e)) {
-            Log.d("EventHandler Class", "Event is being co-organized, discarding... " + map);
-            return;  // Skip adding event to hashmap
-        }
 
         // Add to query hashmap
         queryHashMapOfEvents.put(e.getEventId(), e);
@@ -400,25 +512,8 @@ public class EventHandler {
         // First Identify which event object is different
         eventTmp = findEventById(eventId);
 
-        // Edge case: event object previously removed because user is a co-organizer.
-        // However, now the user is no longer the organizer for the event.
-        // In Firebase's eyes, the document is modified.
-        // findEventById would not be able to find the event, returning null.
-        if (eventTmp == null && hideCoOrganizerEvents) {
-            addEvent(map);
-            return;
-        }
-
         // Load new values
         eventTmp.loadMap(map);
-
-        // This check is after event object loads the new values.
-        // Check if user is a coOrganizer for this event.
-        if (hideCoOrganizerEvents && userIsCoOrganizer(eventTmp)) {
-            Log.d("EventHandler Class", "Event is now being co-organized, removing... " + map);
-            removeEventById(eventTmp.getEventId());
-            return;  // Skip logic below.
-        }
 
         // Edge case: image uploaded or gone?
         tmpImageDocId = map.get("imageDocId");
