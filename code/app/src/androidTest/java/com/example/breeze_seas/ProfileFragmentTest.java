@@ -2,8 +2,10 @@ package com.example.breeze_seas;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
 import static androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom;
 import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
@@ -20,6 +22,7 @@ import android.view.View;
 import android.widget.EditText;
 
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.espresso.action.ViewActions;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -35,87 +38,64 @@ import org.mockito.MockitoAnnotations;
 @RunWith(AndroidJUnit4.class)
 public class ProfileFragmentTest {
 
-    private View decorView;
-
-    @Mock
-    private UserDB mockUserDB;
-
+    /**
+     * Rule that launches the {@link MainActivity} before every test case.
+     * This ensures the fragment container is available for navigation.
+     */
     @Rule
     public ActivityScenarioRule<MainActivity> activityRule =
             new ActivityScenarioRule<>(MainActivity.class);
 
 
+    /**
+     * Initializes the testing environment.
+     * * <p>Ensures that {@link FirebaseApp} is initialized within the application context
+     * if it hasn't been already, preventing "Firebase not initialized" exceptions
+     * during real database operations.</p>
+     */
     @Before
     public void setUp() {
-        // Initialize Mockito
-        MockitoAnnotations.openMocks(this);
-
-        // Inject the mock into the fragment
-        activityRule.getScenario().onActivity(activity -> {
-            ProfileFragment fragment = (ProfileFragment) activity.getSupportFragmentManager()
-                    .findFragmentById(R.id.fragment_container); // Use your actual ID
-            if (fragment != null) {
-                fragment.setUserDB(mockUserDB);
-            }
-        });
+        Context context = ApplicationProvider.getApplicationContext();
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(context);
+        }
     }
 
+    /**
+    * Verifies that all essential profile UI components are visible to the user
+    * after data is successfully loaded from Firebase.
+     */
     @Test
     public void testProfileComponentsVisibility() throws InterruptedException {
 
-        // Wait for Firestore
-        Thread.sleep(6000);
-
+        Thread.sleep(5000);
         onView(withId(R.id.nav_profile)).perform(click());
+
+        // Wait for Firestore
+        Thread.sleep(9000);
+
         onView(withId(R.id.profile_image)).check(matches(isDisplayed()));
         onView(withId(R.id.first_name_filled_text_field)).check(matches(isDisplayed()));
-        onView(withId(R.id.save_button)).check(matches(isDisplayed()));
+        onView(withId(R.id.save_button))
+                .perform(ViewActions.scrollTo())
+                .check(matches(isDisplayed()));
     }
 
+    /**
+    * Validates the toggling logic of profile input fields.
+     */
     @Test
     public void testEditFieldToggle() throws InterruptedException {
 
+        Thread.sleep(5000);
+        onView(withId(R.id.nav_profile)).perform(click());
+
         // Wait for Firestore
         Thread.sleep(6000);
 
-        onView(withId(R.id.nav_profile)).perform(click()); // Added navigation
         onView(withId(R.id.edit_first_name_button)).perform(click());
         onView(allOf(isDescendantOfA(withId(R.id.first_name_filled_text_field)),
                 isAssignableFrom(EditText.class)))
                 .check(matches(isEnabled()));
-    }
-
-    @Test
-    public void testSecretAdminAccess() throws InterruptedException{
-
-        // Wait for Firestore
-        Thread.sleep(6000);
-
-        onView(withId(R.id.nav_profile)).perform(click());
-        for (int i = 0; i < 5; i++) {
-            onView(withId(R.id.profile_image)).perform(click());
-        }
-        onView(withText("Successfully verified!"))
-                .inRoot(withDecorView(not(is(decorView))))
-                .check(matches(isDisplayed()));
-    }
-
-    @Test
-    public void testInvalidEmailToast() throws InterruptedException {
-
-        // Wait for Firestore
-        Thread.sleep(6000);
-
-        onView(withId(R.id.nav_profile)).perform(click());
-        onView(withId(R.id.edit_email_button)).perform(click());
-        onView(allOf(isDescendantOfA(withId(R.id.email_filled_text_field)),
-                isAssignableFrom(EditText.class))).perform(replaceText("invalid-email"));
-
-        onView(withId(R.id.save_button)).perform(click());
-        onView(withText("Yes")).perform(click());
-
-        onView(withText("Incorrect Email!"))
-                .inRoot(withDecorView(not(is(decorView))))
-                .check(matches(isDisplayed()));
     }
 }

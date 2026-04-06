@@ -33,6 +33,9 @@ import com.google.mlkit.vision.common.InputImage;
 
 import java.util.concurrent.ExecutionException;
 
+/**
+ * The camera the user uses for finding an event by scanning its QR Code
+ */
 public class ScanFragment extends Fragment {
 
 
@@ -70,6 +73,9 @@ public class ScanFragment extends Fragment {
         startCamera();
     }
 
+    /**
+     * Starts the camera and activates the scanner for QR Code.
+     */
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture =
                 ProcessCameraProvider.getInstance(requireContext());
