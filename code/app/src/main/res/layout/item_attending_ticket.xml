@@ -32,6 +32,22 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <FrameLayout
+            android:id="@+id/attending_ticket_poster_shell"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/bg_soft_surface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/attending_ticket_poster"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_ticket" />
+        </FrameLayout>
+
         <TextView
             android:id="@+id/attending_ticket_title"
             android:layout_width="0dp"
@@ -43,7 +59,7 @@
             android:text="Summer Music Festival"
             android:textColor="@color/text_primary"
             android:textSize="24sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/attending_ticket_poster_shell"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/attending_ticket_status_chip" />
@@ -59,7 +75,7 @@
             android:text="Sat, Jul 18 • 7:30 PM"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/attending_ticket_poster_shell"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/attending_ticket_title" />
@@ -75,7 +91,7 @@
             android:text="Edmonton, AB"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/attending_ticket_poster_shell"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/attending_ticket_date" />
 

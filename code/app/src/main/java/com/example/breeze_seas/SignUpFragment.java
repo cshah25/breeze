@@ -1,5 +1,8 @@
 package com.example.breeze_seas;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -7,6 +10,7 @@ import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -28,6 +32,8 @@ public class SignUpFragment extends Fragment {
     private String userName;
     private String email;
     private String phoneNumber;
+    @Nullable
+    private AnimatorSet entranceAnimator;
 
     public SignUpFragment() {
         super(R.layout.fragment_sign_up);
@@ -54,25 +60,45 @@ public class SignUpFragment extends Fragment {
         EditText userNameInput = view.findViewById(R.id.signup_username_input);
         EditText emailInput = view.findViewById(R.id.signup_email_input);
         EditText phoneNumberInput = view.findViewById(R.id.signup_phone_number_input);
+        NestedScrollView scrollView = view.findViewById(R.id.signup_scroll_view);
+        View headerPanel = view.findViewById(R.id.signup_header_panel);
+        View formPanel = view.findViewById(R.id.signup_form_panel);
+        View backButton = view.findViewById(R.id.signup_back_button);
 
-        // Bind button
+        playEntrance(headerPanel, formPanel);
+        installFocusAwareScroll(
+                scrollView,
+                firstNameInput,
+                lastNameInput,
+                userNameInput,
+                emailInput,
+                phoneNumberInput
+        );
+
+        backButton.setOnClickListener(v -> requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .setCustomAnimations(
+                        android.R.anim.fade_in,
+                        android.R.anim.fade_out,
+                        android.R.anim.fade_in,
+                        android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, new WelcomeScreenFragment())
+                .commit());
+
         Button confirmButton = view.findViewById(R.id.signup_confirm_button);
         confirmButton.setOnClickListener(onClick -> {
-            // Grab and update strings
-            this.firstName = firstNameInput.getText().toString();
-            this.lastName = lastNameInput.getText().toString();
-            this.userName = userNameInput.getText().toString();
-            this.email = emailInput.getText().toString();
-            this.phoneNumber = phoneNumberInput.getText().toString();
+            this.firstName = safeText(firstNameInput);
+            this.lastName = safeText(lastNameInput);
+            this.userName = safeText(userNameInput);
+            this.email = safeText(emailInput);
+            this.phoneNumber = safeText(phoneNumberInput);
 
-            // If details are okay
             if (verifyDetails()) {
-                // Create User
                 User user = new User(this.androidID, this.firstName, this.lastName, this.userName,
                         this.email, this.phoneNumber, false);
 
                 confirmButton.setEnabled(false);
-                // Grab UserDB
                 UserDB userDBInstance = new UserDB();
                 userDBInstance.createUser(user)
                         .addOnSuccessListener(unused -> {
@@ -83,12 +109,9 @@ public class SignUpFragment extends Fragment {
                             // Add user to view model
                             viewModel.setUser(user);
 
-                            // Switch to ExploreFragment only after the user write succeeds.
-                            ((MainActivity) requireActivity()).showBottomNav(true);
-                            requireActivity().getSupportFragmentManager()
-                                    .beginTransaction()
-                                    .replace(R.id.fragment_container, new ExploreFragment())
-                                    .commit();
+                            MainActivity activity = (MainActivity) requireActivity();
+                            activity.showBottomNav(true);
+                            activity.navigateToTopLevelDestination(R.id.nav_explore);
                         })
                         .addOnFailureListener(e -> {
                             if (!isAdded()) {
@@ -101,6 +124,15 @@ public class SignUpFragment extends Fragment {
             }
         });
 
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (entranceAnimator != null) {
+            entranceAnimator.cancel();
+            entranceAnimator = null;
+        }
+        super.onDestroyView();
     }
 
     /**
@@ -188,19 +220,66 @@ public class SignUpFragment extends Fragment {
      * @param msg Message to show
      */
     private void dialogMsg(String msg) {
-        // Source - https://stackoverflow.com/a/66298602
-        // Posted by Marwa Eltayeb, modified by community. See post 'Timeline' for change history
-        // Retrieved 2026-03-09, License - CC BY-SA 4.0
-
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+        builder.setTitle("Profile setup");
         builder.setMessage(msg);
         builder.setPositiveButton("I understand", (dialogInterface, i) -> {
             dialogInterface.dismiss();
         });
 
-        // Show the dialog
         final androidx.appcompat.app.AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    @NonNull
+    private String safeText(@NonNull EditText editText) {
+        return editText.getText() == null ? "" : editText.getText().toString().trim();
+    }
+
+    private void playEntrance(@NonNull View headerPanel, @NonNull View formPanel) {
+        headerPanel.setAlpha(0f);
+        headerPanel.setTranslationY(30f);
+        formPanel.setAlpha(0f);
+        formPanel.setTranslationY(30f);
+
+        AnimatorSet set = new AnimatorSet();
+        set.playTogether(
+                ObjectAnimator.ofFloat(headerPanel, View.ALPHA, 0f, 1f),
+                ObjectAnimator.ofFloat(headerPanel, View.TRANSLATION_Y, 30f, 0f),
+                ObjectAnimator.ofFloat(formPanel, View.ALPHA, 0f, 1f),
+                ObjectAnimator.ofFloat(formPanel, View.TRANSLATION_Y, 30f, 0f)
+        );
+        set.setDuration(550L);
+        set.start();
+        entranceAnimator = set;
+    }
+
+    private void installFocusAwareScroll(@NonNull NestedScrollView scrollView,
+                                         @NonNull EditText... inputs) {
+        for (EditText input : inputs) {
+            input.setOnFocusChangeListener((focusedView, hasFocus) -> {
+                if (!hasFocus) {
+                    return;
+                }
+
+                scrollView.post(() -> scrollFieldIntoView(scrollView, focusedView));
+            });
+
+            input.setOnClickListener(clickedView ->
+                    scrollView.post(() -> scrollFieldIntoView(scrollView, clickedView)));
+        }
+    }
+
+    private void scrollFieldIntoView(@NonNull NestedScrollView scrollView, @NonNull View target) {
+        Rect rect = new Rect();
+        target.getDrawingRect(rect);
+        scrollView.offsetDescendantRectToMyCoords(target, rect);
+        scrollView.smoothScrollTo(0, Math.max(0, rect.top - dpToPx(24)));
+    }
+
+    private int dpToPx(int dp) {
+        float density = requireContext().getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 
     private String buildSignUpErrorMessage(Exception e) {

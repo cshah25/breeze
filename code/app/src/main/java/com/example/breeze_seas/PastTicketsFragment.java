@@ -12,7 +12,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
  * PastTicketsFragment shows completed or inactive ticket history.
@@ -64,13 +64,22 @@ public class PastTicketsFragment extends Fragment {
 
         adapter = new PastTicketsAdapter(new PastTicketsAdapter.OnPastEventClickListener() {
             /**
-             * Shows the current placeholder response for past-ticket taps.
+             * Shows an event-specific detail dialog for archived ticket entries.
              *
              * @param event The archived event card the entrant tapped.
              */
             @Override
             public void onPastEventClick(@NonNull PastEventUIModel event) {
-                Snackbar.make(view, "Past event details are not available yet.", Snackbar.LENGTH_SHORT).show();
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(event.getStatusLabel())
+                        .setMessage(getString(
+                                R.string.ticket_past_detail_message,
+                                event.getTitle(),
+                                event.getDateLabel(),
+                                event.getDetailLabel()
+                        ))
+                        .setPositiveButton(R.string.ticket_past_dialog_button, null)
+                        .show();
             }
         });
 

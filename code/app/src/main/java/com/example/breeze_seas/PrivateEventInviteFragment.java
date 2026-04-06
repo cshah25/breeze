@@ -18,34 +18,33 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * Lets organizers invite existing users into a private event by searching local user fields.
- * Invites are written into the agreed participants schema with {@code status="invited"}.
+ * Invites reuse the shared notification flow so entrants respond from Alerts first. A participant
+ * row is only created after the entrant accepts, which then moves the event into the waiting-list
+ * flow inside Active Tickets.
  */
 public class PrivateEventInviteFragment extends Fragment {
 
     private final FirebaseFirestore db = DBConnector.getDb();
+    private final NotificationService notificationService = new NotificationService();
     private final ArrayList<User> allUsers = new ArrayList<>();
     private final ArrayList<User> eligibleUsers = new ArrayList<>();
     private final Set<String> participantIds = new HashSet<>();
+    private final Set<String> pendingInviteIds = new HashSet<>();
     private final Set<String> organizerIds = new HashSet<>();
 
     private SessionViewModel sessionViewModel;
@@ -62,6 +61,8 @@ public class PrivateEventInviteFragment extends Fragment {
     private ListenerRegistration eventListener;
     @Nullable
     private ListenerRegistration participantsListener;
+    @Nullable
+    private ListenerRegistration inviteNotificationsListener;
 
     private boolean usersLoaded = false;
     private String searchQuery = "";
@@ -179,7 +180,10 @@ public class PrivateEventInviteFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        if (currentEvent != null && eventListener == null && participantsListener == null) {
+        if (currentEvent != null
+                && eventListener == null
+                && participantsListener == null
+                && inviteNotificationsListener == null) {
             startRealtimeExclusionListeners();
         }
     }
@@ -197,6 +201,10 @@ public class PrivateEventInviteFragment extends Fragment {
         if (participantsListener != null) {
             participantsListener.remove();
             participantsListener = null;
+        }
+        if (inviteNotificationsListener != null) {
+            inviteNotificationsListener.remove();
+            inviteNotificationsListener = null;
         }
     }
 
@@ -238,7 +246,7 @@ public class PrivateEventInviteFragment extends Fragment {
 
     /**
      * Starts realtime listeners for the event document and its participants subcollection so the
-     * invite list automatically removes newly added organizers and entrants.
+     * invite list automatically removes newly added organizers, entrants, and outstanding invites.
      */
     private void startRealtimeExclusionListeners() {
         String eventId = currentEvent.getEventId();
@@ -285,7 +293,35 @@ public class PrivateEventInviteFragment extends Fragment {
                     participantIds.clear();
                     if (snapshots != null) {
                         for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                            participantIds.add(doc.getId());
+                            String participantStatus = doc.getString("status");
+                            if (!"private_invited".equals(participantStatus)) {
+                                participantIds.add(doc.getId());
+                            }
+                        }
+                    }
+                    refreshEligibleUsers();
+                });
+
+        inviteNotificationsListener = db.collection("notifications")
+                .whereEqualTo("eventId", eventId)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        Toast.makeText(requireContext(), R.string.private_event_invite_failed, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    pendingInviteIds.clear();
+                    if (snapshots != null) {
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                            String type = doc.getString("type");
+                            boolean isSeen = Boolean.TRUE.equals(doc.getBoolean("isSeen"));
+                            String invitedUserId = doc.getString("userId");
+                            if (NotificationType.PRIVATE_EVENT_INVITE.name().equals(type)
+                                    && !isSeen
+                                    && invitedUserId != null
+                                    && !invitedUserId.trim().isEmpty()) {
+                                pendingInviteIds.add(invitedUserId.trim());
+                            }
                         }
                     }
                     refreshEligibleUsers();
@@ -332,7 +368,9 @@ public class PrivateEventInviteFragment extends Fragment {
             if (user == null || user.getDeviceId() == null || user.getDeviceId().trim().isEmpty()) {
                 continue;
             }
-            if (organizerIds.contains(user.getDeviceId()) || participantIds.contains(user.getDeviceId())) {
+            if (organizerIds.contains(user.getDeviceId())
+                    || participantIds.contains(user.getDeviceId())
+                    || pendingInviteIds.contains(user.getDeviceId())) {
                 continue;
             }
             if (matchesSearch(user, searchQuery)) {
@@ -403,7 +441,8 @@ public class PrivateEventInviteFragment extends Fragment {
     }
 
     /**
-     * Writes one invited participant row into the current event's participants subcollection.
+     * Sends the private invite through the shared notification system so the entrant responds from
+     * Alerts before any ticket row is created.
      *
      * @param user User receiving the private invite.
      */
@@ -415,30 +454,17 @@ public class PrivateEventInviteFragment extends Fragment {
 
         progressBar.setVisibility(View.VISIBLE);
 
-        DocumentReference participantRef = db.collection("events")
-                .document(currentEvent.getEventId())
-                .collection("participants")
-                .document(user.getDeviceId());
-
-        Map<String, Object> inviteData = new HashMap<>();
-        inviteData.put("deviceId", user.getDeviceId());
-        inviteData.put("status", "invited");
-        inviteData.put("invitedAt", FieldValue.serverTimestamp());
-
-        db.runTransaction(transaction -> {
-                    DocumentSnapshot existing = transaction.get(participantRef);
-                    if (existing.exists()) {
-                        throw new FirebaseFirestoreException(
-                                getString(R.string.private_event_invite_already_member),
-                                FirebaseFirestoreException.Code.ABORTED
-                        );
-                    }
-                    transaction.set(participantRef, inviteData);
-                    return null;
-                })
+        Notification notification = new Notification(
+                NotificationType.PRIVATE_EVENT_INVITE,
+                "",
+                currentEvent.getEventId(),
+                currentEvent.getName(),
+                user.getDeviceId()
+        );
+        notificationService.sendNotification(notification)
                 .addOnSuccessListener(unused -> {
                     progressBar.setVisibility(View.GONE);
-                    participantIds.add(user.getDeviceId());
+                    pendingInviteIds.add(user.getDeviceId());
                     refreshEligibleUsers();
                     Toast.makeText(
                             requireContext(),
@@ -448,11 +474,6 @@ public class PrivateEventInviteFragment extends Fragment {
                 })
                 .addOnFailureListener(e -> {
                     progressBar.setVisibility(View.GONE);
-                    if (e instanceof FirebaseFirestoreException
-                            && ((FirebaseFirestoreException) e).getCode() == FirebaseFirestoreException.Code.ABORTED) {
-                        Toast.makeText(requireContext(), R.string.private_event_invite_already_member, Toast.LENGTH_SHORT).show();
-                        return;
-                    }
                     Toast.makeText(requireContext(), R.string.private_event_invite_failed, Toast.LENGTH_SHORT).show();
                 });
     }

@@ -123,15 +123,17 @@ public class Notification {
         if (type == null) return content != null ? content : "";
         switch (type) {
             case WIN:
-                return "Congratulations! You won the lottery for " + eventName + "!";
+                return "The draw for " + eventName + " is complete. You were selected.";
             case LOSS:
-                return "We're sorry, but you were not selected for " + eventName + ".";
+                return "The draw for " + eventName + " is complete. This entry was not selected.";
+            case PRIVATE_EVENT_INVITE:
+                return "You were invited to join the private waitlist for " + eventName + ".";
             case ANNOUNCEMENT_SELECTED:
             case ANNOUNCEMENT_WAITLIST:
             case ANNOUNCEMENT_CANCELLED:
                 return content;
             case CO_ORG_INVITE:
-                return "You have been invited to be a Co-Organizer for " + eventName + "!";
+                return "You have been invited to help organize " + eventName + ".";
             default:
                 return content;
         }

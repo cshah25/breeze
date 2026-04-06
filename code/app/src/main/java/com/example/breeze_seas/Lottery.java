@@ -21,6 +21,8 @@ public class Lottery {
     private final Event event;
     private final WaitingList waitingList;
     private final int capacity;
+    private final List<User> lastRoundWinners = new ArrayList<>();
+    private final List<User> lastRoundLosers = new ArrayList<>();
 
     /**
      * Lottery constructor
@@ -30,6 +32,14 @@ public class Lottery {
         this.event = event;
         this.capacity = event.getEventCapacity();
         this.waitingList = event.getWaitingList();
+    }
+
+    public List<User> getLastRoundWinners() {
+        return new ArrayList<>(lastRoundWinners);
+    }
+
+    public List<User> getLastRoundLosers() {
+        return new ArrayList<>(lastRoundLosers);
     }
 
     /**
@@ -55,9 +65,11 @@ public class Lottery {
                     }
 
                     int remainingSpots = capacity - currentOccupancy;
-                    List<User> pool = waitingList.getUserList();
+                    List<User> pool = new ArrayList<>(waitingList.getUserList());
 
                     if (pool == null || pool.isEmpty()) {
+                        lastRoundWinners.clear();
+                        lastRoundLosers.clear();
                         if (finalListener != null) finalListener.onUpdate();
                         return;
                     }
@@ -67,30 +79,48 @@ public class Lottery {
 
 
                     final List<User> winners = new ArrayList<>(pool.subList(0, totalToSelect));
-
+                    final List<User> losers = new ArrayList<>(pool.subList(totalToSelect, pool.size()));
+                    lastRoundWinners.clear();
+                    lastRoundWinners.addAll(winners);
+                    lastRoundLosers.clear();
+                    lastRoundLosers.addAll(losers);
 
                     final AtomicInteger writesCompleted = new AtomicInteger(0);
                     final AtomicBoolean hasFailed = new AtomicBoolean(false);
                     final int BATCH_LIMIT = 450;
+                    final List<User> participantsToUpdate = new ArrayList<>(winners.size() + losers.size());
+                    participantsToUpdate.addAll(winners);
+                    participantsToUpdate.addAll(losers);
+                    final java.util.Set<String> winnerIds = new java.util.HashSet<>();
+                    for (User winner : winners) {
+                        winnerIds.add(winner.getDeviceId());
+                    }
 
                     db.collection("events").document(eventId)
                             .update("drawARound", FieldValue.increment(1));
 
-                    for (int i = 0; i < totalToSelect; i += BATCH_LIMIT) {
+                    if (participantsToUpdate.isEmpty()) {
+                        if (finalListener != null) finalListener.onUpdate();
+                        return;
+                    }
+
+                    for (int i = 0; i < participantsToUpdate.size(); i += BATCH_LIMIT) {
                         WriteBatch batch = db.batch();
-                        int end = Math.min(i + BATCH_LIMIT, totalToSelect);
+                        int end = Math.min(i + BATCH_LIMIT, participantsToUpdate.size());
                         final int currentBatchSize = end - i;
 
                         for (int j = i; j < end; j++) {
-                            User winner = winners.get(j);
+                            User participant = participantsToUpdate.get(j);
                             DocumentReference participantRef = db.collection("events")
                                     .document(eventId)
                                     .collection("participants")
-                                    .document(winner.getDeviceId());
+                                    .document(participant.getDeviceId());
 
                             Map<String, Object> update = new HashMap<>();
-                            update.put("deviceId", winner.getDeviceId());
-                            update.put("status", "pending");
+                            update.put("deviceId", participant.getDeviceId());
+                            update.put("status", winnerIds.contains(participant.getDeviceId())
+                                    ? "pending"
+                                    : "not_selected");
                             batch.set(participantRef, update, SetOptions.merge());
                         }
 
@@ -103,8 +133,7 @@ public class Lottery {
                                 return;
                             }
 
-
-                            if (writesCompleted.addAndGet(currentBatchSize) >= totalToSelect) {
+                            if (writesCompleted.addAndGet(currentBatchSize) >= participantsToUpdate.size()) {
                                 if (finalListener != null) finalListener.onUpdate();
                             }
                         });

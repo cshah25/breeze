@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -41,6 +42,7 @@ public class OrganizerListAdapter extends ArrayAdapter<User> {
         User entrant = getItem(position);
 
         if (entrant != null) {
+            ImageView avatarView = convertView.findViewById(R.id.entrant_avatar);
             TextView nameView = convertView.findViewById(R.id.entrant_name_text);
             TextView detailView = convertView.findViewById(R.id.entrant_detail_text);
             TextView statusView = convertView.findViewById(R.id.entrant_status_chip);
@@ -71,8 +73,18 @@ public class OrganizerListAdapter extends ArrayAdapter<User> {
             statusView.setTextColor(ContextCompat.getColor(getContext(), highlightedStatus
                     ? R.color.white
                     : R.color.text_primary));
+
+            UiImageBinder.bindUserAvatar(avatarView, entrant, () -> bindFallbackAvatar(avatarView));
         }
         return convertView;
+    }
+
+    private void bindFallbackAvatar(@NonNull ImageView imageView) {
+        int padding = (int) (imageView.getResources().getDisplayMetrics().density * 9);
+        imageView.setImageResource(R.drawable.ic_profile);
+        imageView.setImageTintList(null);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setPadding(padding, padding, padding, padding);
     }
 
     /**

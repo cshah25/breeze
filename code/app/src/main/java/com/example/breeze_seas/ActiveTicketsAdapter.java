@@ -1,5 +1,6 @@
 package com.example.breeze_seas;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -94,38 +95,43 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
         final int white = ContextCompat.getColor(holder.itemView.getContext(), android.R.color.white);
         final int black = ContextCompat.getColor(holder.itemView.getContext(), android.R.color.black);
         final int secondary = ContextCompat.getColor(holder.itemView.getContext(), R.color.text_secondary);
+        int fallbackIconRes = R.drawable.ic_clock;
 
         switch (ticket.getStatus()) {
 
             case PENDING:
-                holder.chip.setText("Waiting");
-                holder.icon.setImageResource(R.drawable.ic_clock);
-                holder.supporting.setText("Your entry is in the waiting list. We will notify you when the organizer updates the draw outcome.");
-                holder.footer.setText("Awaiting selection outcome");
+                holder.chip.setText(R.string.ticket_waiting_chip);
+                fallbackIconRes = R.drawable.ic_clock;
+                holder.supporting.setText(R.string.ticket_waiting_supporting);
+                holder.footer.setText(R.string.ticket_waiting_footer);
 
                 holder.chip.setBackgroundResource(R.drawable.bg_ticket_status_outline);
                 holder.chip.setTextColor(black);
                 break;
 
             case BACKUP:
-                holder.chip.setText("Backup pool");
-                holder.icon.setImageResource(R.drawable.ic_info);
-                holder.supporting.setText("The first draw has finished. Your entry stays active in case any confirmed spots are released.");
-                holder.footer.setText("Tap to view backup pool details");
+                holder.chip.setText(R.string.ticket_backup_chip);
+                fallbackIconRes = R.drawable.ic_info;
+                holder.supporting.setText(R.string.ticket_backup_supporting);
+                holder.footer.setText(R.string.ticket_backup_footer);
 
                 holder.chip.setBackgroundResource(R.drawable.bg_ticket_status_outline);
                 holder.chip.setTextColor(black);
                 break;
 
             case ACTION_REQUIRED:
-                holder.chip.setText(ticket.isPrivateEvent() ? "Private Invite" : "Action Required");
-                holder.icon.setImageResource(R.drawable.ic_star);
-                if (ticket.isPrivateEvent()) {
-                    holder.supporting.setText("You were invited to join the waitlist for this private event. Accept to join the waitlist, or decline to dismiss the invite.");
-                    holder.footer.setText("Tap to join or decline");
+                holder.chip.setText(ticket.isPrivateInvitePending()
+                        ? R.string.ticket_private_invite_chip
+                        : R.string.ticket_selected_chip);
+                fallbackIconRes = ticket.isPrivateInvitePending()
+                        ? R.drawable.ic_ticket
+                        : R.drawable.ic_star;
+                if (ticket.isPrivateInvitePending()) {
+                    holder.supporting.setText(R.string.ticket_private_invite_supporting);
+                    holder.footer.setText(R.string.ticket_private_invite_footer);
                 } else {
-                    holder.supporting.setText("You were selected and your spot is waiting. Accept now to move this event into your attending tickets.");
-                    holder.footer.setText("Tap to accept or decline");
+                    holder.supporting.setText(R.string.ticket_selected_supporting);
+                    holder.footer.setText(R.string.ticket_selected_footer);
                 }
 
                 holder.chip.setBackgroundResource(R.drawable.bg_ticket_status_solid);
@@ -134,6 +140,10 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
                 break;
         }
 
+        final int resolvedFallbackIconRes = fallbackIconRes;
+        bindFallbackThumbnail(holder.icon, resolvedFallbackIconRes);
+        UiImageBinder.bindImageDoc(holder.icon, ticket.getImageDocId(),
+                () -> bindFallbackThumbnail(holder.icon, resolvedFallbackIconRes));
         holder.footer.setTextColor(secondary);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -149,6 +159,15 @@ public class ActiveTicketsAdapter extends RecyclerView.Adapter<ActiveTicketsAdap
                 }
             }
         });
+    }
+
+    private void bindFallbackThumbnail(@NonNull ImageView imageView, int drawableResId) {
+        int padding = (int) (imageView.getResources().getDisplayMetrics().density * 15);
+        imageView.setImageResource(drawableResId);
+        imageView.setImageTintList(ColorStateList.valueOf(
+                ContextCompat.getColor(imageView.getContext(), R.color.text_primary)));
+        imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        imageView.setPadding(padding, padding, padding, padding);
     }
 
     /**

@@ -179,6 +179,19 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
+    public void navigateToTopLevelDestination(int destinationId) {
+        openTopLevelDestination(destinationId);
+    }
+
+    public void navigateToTicketsTab(int tabIndex) {
+        openTopLevelDestination(R.id.nav_tickets);
+        getSupportFragmentManager().executePendingTransactions();
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (currentFragment instanceof TicketsFragment) {
+            ((TicketsFragment) currentFragment).openTab(tabIndex);
+        }
+    }
+
     private void bindBottomNavigation() {
         for (int destinationId : TOP_LEVEL_DESTINATIONS) {
             View navItem = findViewById(destinationId);
@@ -322,7 +335,6 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 }
-
 
 
 
