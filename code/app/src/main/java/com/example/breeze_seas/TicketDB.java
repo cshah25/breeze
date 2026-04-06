@@ -7,6 +7,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
@@ -54,7 +55,8 @@ public final class TicketDB {
 
     private static final TicketDB INSTANCE = new TicketDB();
 
-    private final FirebaseFirestore db = DBConnector.getDb();
+    @Nullable
+    private FirebaseFirestore db;
     private final List<Listener> listeners = new ArrayList<>();
     private final List<TicketUIModel> activeTickets = new ArrayList<>();
     private final List<AttendingTicketUIModel> attendingTickets = new ArrayList<>();
@@ -67,6 +69,7 @@ public final class TicketDB {
     private String currentDeviceId;
     @Nullable
     private ListenerRegistration participantEntriesListener;
+    private boolean testModeEnabled;
 
     /**
      * Prevents external instantiation of the shared ticket data source.
@@ -82,6 +85,14 @@ public final class TicketDB {
     @NonNull
     public static TicketDB getInstance() {
         return INSTANCE;
+    }
+
+    @NonNull
+    private FirebaseFirestore db() {
+        if (db == null) {
+            db = DBConnector.getDb();
+        }
+        return db;
     }
 
     /**
@@ -123,6 +134,12 @@ public final class TicketDB {
      * @param preferredDeviceId Preferred participant device id from the signed-in user session.
      */
     public void refreshTickets(@NonNull Context context, @Nullable String preferredDeviceId) {
+        synchronized (this) {
+            if (testModeEnabled) {
+                return;
+            }
+        }
+
         String deviceId = resolveCurrentDeviceId(context.getApplicationContext(), preferredDeviceId);
         if (deviceId == null) {
             Log.w(TAG, "No current device id could be resolved for Tickets.");
@@ -267,7 +284,7 @@ public final class TicketDB {
             currentDeviceId = deviceId;
         }
 
-        participantEntriesListener = db.collectionGroup(PARTICIPANTS_COLLECTION)
+        participantEntriesListener = db().collectionGroup(PARTICIPANTS_COLLECTION)
                 .whereEqualTo("deviceId", deviceId)
                 .addSnapshotListener(new EventListener<>() {
                     /**
@@ -405,7 +422,7 @@ public final class TicketDB {
             }
         }
 
-        ListenerRegistration eventListener = db.collection(EVENTS_COLLECTION)
+        ListenerRegistration eventListener = db().collection(EVENTS_COLLECTION)
                 .document(eventId)
                 .addSnapshotListener(new EventListener<>() {
                     /**
@@ -774,7 +791,7 @@ public final class TicketDB {
             return;
         }
 
-        db.collection(EVENTS_COLLECTION)
+        db().collection(EVENTS_COLLECTION)
                 .document(eventId)
                 .collection(PARTICIPANTS_COLLECTION)
                 .document(deviceId)
@@ -820,7 +837,7 @@ public final class TicketDB {
             return;
         }
 
-        db.collection(EVENTS_COLLECTION)
+        db().collection(EVENTS_COLLECTION)
                 .document(eventId)
                 .collection(PARTICIPANTS_COLLECTION)
                 .document(deviceId)
@@ -928,6 +945,48 @@ public final class TicketDB {
         for (Listener listener : snapshot) {
             listener.onTicketsChanged();
         }
+    }
+
+    /**
+     * Enables deterministic ticket-fragment tests without starting live Firestore listeners.
+     *
+     * @param enabled Whether tests should disable realtime refreshes.
+     */
+    @VisibleForTesting
+    void setTestModeEnabled(boolean enabled) {
+        synchronized (this) {
+            testModeEnabled = enabled;
+        }
+
+        if (enabled) {
+            stopRealtimeListening();
+        }
+    }
+
+    /**
+     * Publishes seeded ticket lists for instrumentation tests and notifies active listeners.
+     *
+     * @param nextActive Active tickets the tests want rendered.
+     * @param nextAttending Attending tickets the tests want rendered.
+     * @param nextPast Past tickets the tests want rendered.
+     */
+    @VisibleForTesting
+    void publishTicketsForTesting(
+            @NonNull List<TicketUIModel> nextActive,
+            @NonNull List<AttendingTicketUIModel> nextAttending,
+            @NonNull List<PastEventUIModel> nextPast
+    ) {
+        stopRealtimeListening();
+        replaceTickets(nextActive, nextAttending, nextPast);
+    }
+
+    /**
+     * Clears all cached ticket state so each instrumentation test starts from a known baseline.
+     */
+    @VisibleForTesting
+    void resetForTesting() {
+        stopRealtimeListening();
+        replaceTickets(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
     /**
