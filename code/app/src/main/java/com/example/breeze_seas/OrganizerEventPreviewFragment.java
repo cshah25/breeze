@@ -628,11 +628,9 @@ public class OrganizerEventPreviewFragment extends Fragment {
 
         // WaitingList Capacity
         String waitingListText = (waitingListCapacityInput.getText() == null) ? "" : waitingListCapacityInput.getText().toString().trim();
-        Integer waitingListCap = null;
-        if (TextUtils.isEmpty(waitingListText)) {
-            waitingListCapacityInput.setError("Number required");
-            return;
-        }
+        Integer waitingListCap = currentEvent.getWaitingListCapacity() < 0
+                ? null
+                : currentEvent.getWaitingListCapacity();
         if (!TextUtils.isEmpty(waitingListText)) {
             try {
                 waitingListCap = Integer.parseInt(waitingListText);
