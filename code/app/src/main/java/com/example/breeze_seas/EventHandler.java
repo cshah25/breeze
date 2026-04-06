@@ -1,7 +1,5 @@
 package com.example.breeze_seas;
 
-import static androidx.core.content.ContentProviderCompat.requireContext;
-
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
@@ -54,6 +52,7 @@ public class EventHandler {
             };
 
     private final boolean searchFilterEnabled;
+    private final HashMap<String, String> searchCacheHashMap = new HashMap<String, String>();
     private String keywordString = "";
     @Nullable
     private Long availabilityStartMillis = null;
@@ -279,9 +278,28 @@ public class EventHandler {
      * @return true if event matches filter, otherwise false.
      */
     private boolean matchesFilter(Event e) {
-        return e.toString().contains(keywordString)
+        return matchesSearchCache(e, keywordString)
                 && matchesAvailabilityFilter(e)
                 && matchesCapacityFilter(e);
+    }
+
+    /**
+     * Checks whether the event matches with the keywordString search.
+     * @param e Event object that is being checked against.
+     * @param keywordString String that is the keyword search.
+     * @return True if it matches in the searchCache, otherwise false.
+     */
+    private boolean matchesSearchCache(Event e, String keywordString) {
+        // Search in cache
+        String comparedString = searchCacheHashMap.get(e.getEventId());
+
+        // Check if keyword search is in the cache.
+        if (comparedString != null && comparedString.contains(keywordString)) {
+            return true;
+        }
+
+        // fallback if cant find in search cache
+        return e.toString().contains(keywordString);
     }
 
     /**
@@ -337,6 +355,41 @@ public class EventHandler {
         filter();
         sort();
         post();
+    }
+
+    /**
+     * Helper method to cache an event's search field.
+     * @param e Event object to cache.
+     */
+    private void addToSearchCache(Event e) {
+        final String[] cacheString = {e.toString()};
+        e.fetchOrganizerNames(new Event.fetchOrganizerNamesCallback() {
+            @Override
+            public void onSuccess(ArrayList<String> names) {
+                // For each user
+                for (String userName : names) {
+                    cacheString[0] = cacheString[0] + " " + userName;
+                }
+
+                // Add to cache
+                searchCacheHashMap.put(e.getEventId(), cacheString[0]);
+
+            }
+
+            @Override
+            public void onFailure(Exception error) {
+                // Add to cache
+                searchCacheHashMap.put(e.getEventId(), cacheString[0]);
+            }
+        });
+    }
+
+    /**
+     * Helper method to delete the cache of an event's search field.
+     * @param eventId Event id to remove cache of.
+     */
+    private void removeFromSearchCache(String eventId) {
+        searchCacheHashMap.remove(eventId);
     }
 
     /**
@@ -488,6 +541,9 @@ public class EventHandler {
         // Add to query hashmap
         queryHashMapOfEvents.put(e.getEventId(), e);
 
+        // Compute searchCache
+        addToSearchCache(e);
+
         // Attach image listeners if applicable
         Object tmpImageDocId = map.get("imageDocId");
         if (tmpImageDocId != null) {
@@ -514,6 +570,9 @@ public class EventHandler {
 
         // Load new values
         eventTmp.loadMap(map);
+
+        // Recompute Search Cache
+        addToSearchCache(eventTmp);
 
         // Edge case: image uploaded or gone?
         tmpImageDocId = map.get("imageDocId");
@@ -552,6 +611,9 @@ public class EventHandler {
 
         // Detach image listeners if applicable
         removeImageListener(eventId);
+
+        // Remove from searchCache
+        removeFromSearchCache(eventId);
 
         // Remove event
         queryHashMapOfEvents.remove(eventId);
